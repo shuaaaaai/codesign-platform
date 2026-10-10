@@ -14,6 +14,8 @@ interface InfiniteCanvasProps {
 
 export function InfiniteCanvas({ artboards, collaborators, onArtboardDoubleClick, onUpload }: InfiniteCanvasProps) {
   const editorRef = useRef<Editor | null>(null);
+  const doubleClickUnsubscribeRef = useRef<(() => void) | null>(null);
+  const onArtboardDoubleClickRef = useRef(onArtboardDoubleClick);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -49,24 +51,22 @@ export function InfiniteCanvas({ artboards, collaborators, onArtboardDoubleClick
     }
   }, [artboards]);
 
+  useEffect(() => {
+    onArtboardDoubleClickRef.current = onArtboardDoubleClick;
+  }, [onArtboardDoubleClick]);
+
+  useEffect(() => {
+    return () => {
+      doubleClickUnsubscribeRef.current?.();
+      doubleClickUnsubscribeRef.current = null;
+    };
+  }, []);
+
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const file = event.dataTransfer.files?.[0];
     if (file && onUpload) {
       onUpload(file);
-    }
-  };
-
-  const handleDoubleClick = () => {
-    const editor = editorRef.current;
-    if (!editor) {
-      return;
-    }
-    const selected = editor.getSelectedShapes();
-    const first = selected[0];
-    const artboardId = String(first?.meta?.artboardId ?? "");
-    if (artboardId) {
-      onArtboardDoubleClick(artboardId);
     }
   };
 
@@ -94,11 +94,26 @@ export function InfiniteCanvas({ artboards, collaborators, onArtboardDoubleClick
           拖拽 PSD 文件到此处上传
         </div>
       )}
-      <div className="h-full w-full" onDoubleClick={handleDoubleClick}>
+      <div className="h-full w-full">
         <Tldraw
           onMount={(editor) => {
             editorRef.current = editor;
             editor.updateInstanceState({ isDebugMode: false });
+            doubleClickUnsubscribeRef.current?.();
+            const unsubscribe = editor.on("event", (event) => {
+              if (event.name === "double_click" && "phase" in event && event.phase === "up") {
+                const target = editor.getShapeAtPoint(editor.inputs.currentPagePoint);
+                const artboardId = String(target?.meta?.artboardId ?? "");
+                if (artboardId) {
+                  onArtboardDoubleClickRef.current(artboardId);
+                }
+              }
+            });
+            if (typeof unsubscribe === "function") {
+              doubleClickUnsubscribeRef.current = unsubscribe;
+            } else {
+              doubleClickUnsubscribeRef.current = null;
+            }
           }}
         />
       </div>

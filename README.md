@@ -59,7 +59,8 @@ docker compose -f docker/docker-compose.yml up --build
 见 `.env.example`，包含：
 
 - `DATABASE_URL`: PostgreSQL 连接串
-- `REDIS_URL`: Redis 地址
+- `REDIS_URL`: Redis 地址（兼容保留）
+- `REDIS_HOST` / `REDIS_PORT`: Redis 主机与端口
 - `MINIO_*`: 对象存储配置
 - `JWT_SECRET`: 登录签名密钥
 - `NEXT_PUBLIC_API_URL`: Web 端 API 地址
