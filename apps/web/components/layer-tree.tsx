@@ -9,6 +9,8 @@ interface LayerTreeProps {
   onSelectLayer: (layer: LayerNode) => void;
 }
 
+type TreeLayer = LayerNode & { children: TreeLayer[] };
+
 const typeIcons: Record<LayerNode["type"], string> = {
   group: "📁",
   text: "T",
@@ -16,11 +18,11 @@ const typeIcons: Record<LayerNode["type"], string> = {
   image: "🖼",
 };
 
-function buildTree(nodes: LayerNode[]): Array<LayerNode & { children: LayerNode[] }> {
-  const map = new Map<string, LayerNode & { children: LayerNode[] }>();
+function buildTree(nodes: LayerNode[]): TreeLayer[] {
+  const map = new Map<string, TreeLayer>();
   nodes.forEach((node) => map.set(node.id, { ...node, children: [] }));
 
-  const roots: Array<LayerNode & { children: LayerNode[] }> = [];
+  const roots: TreeLayer[] = [];
   map.forEach((node) => {
     if (node.parentId && map.has(node.parentId)) {
       map.get(node.parentId)?.children.push(node);
@@ -40,7 +42,7 @@ function TreeNode({
   selectedLayerId,
   onSelectLayer,
 }: {
-  node: LayerNode & { children: LayerNode[] };
+  node: TreeLayer;
   depth: number;
   expanded: Set<string>;
   toggle: (id: string) => void;
@@ -82,13 +84,13 @@ export function LayerTree({ layers, selectedLayerId, onSelectLayer }: LayerTreeP
       return tree;
     }
 
-    const walk = (node: LayerNode & { children: LayerNode[] }): (LayerNode & { children: LayerNode[] }) | null => {
-      const nextChildren = node.children.map(walk).filter((value): value is LayerNode & { children: LayerNode[] } => Boolean(value));
+    const walk = (node: TreeLayer): TreeLayer | null => {
+      const nextChildren = node.children.map(walk).filter((value): value is TreeLayer => Boolean(value));
       const matched = node.name.toLowerCase().includes(keyword.toLowerCase());
       return matched || nextChildren.length > 0 ? { ...node, children: nextChildren } : null;
     };
 
-    return tree.map(walk).filter((value): value is LayerNode & { children: LayerNode[] } => Boolean(value));
+    return tree.map(walk).filter((value): value is TreeLayer => Boolean(value));
   }, [keyword, tree]);
 
   const toggle = (id: string) => {

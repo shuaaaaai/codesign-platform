@@ -2,13 +2,18 @@ import { Body, Controller, Get, Param, Post, UploadedFile, UseInterceptors } fro
 import { FileInterceptor } from "@nestjs/platform-express";
 import { DesignFilesService } from "./design-files.service";
 
+interface UploadedDesignFile {
+  originalname: string;
+  buffer: Buffer;
+}
+
 @Controller("design-files")
 export class DesignFilesController {
   constructor(private readonly service: DesignFilesService) {}
 
   @Post("upload")
   @UseInterceptors(FileInterceptor("file"))
-  upload(@UploadedFile() file: Express.Multer.File, @Body("projectId") projectId: string, @Body("userId") userId?: string) {
+  upload(@UploadedFile() file: UploadedDesignFile, @Body("projectId") projectId: string, @Body("userId") userId?: string) {
     return this.service.uploadFile(file, projectId, userId ?? "anonymous-user");
   }
 

@@ -1,6 +1,7 @@
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { LayersService } from "./layers.service";
-import type { CodeFormat } from "@codesign/code-generator";
+
+type CodeFormat = "css" | "tailwind" | "react" | "vue" | "ios" | "android";
 
 @Controller("layers")
 export class LayersController {

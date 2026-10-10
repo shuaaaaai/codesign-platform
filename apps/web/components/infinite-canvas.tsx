@@ -21,12 +21,12 @@ export function InfiniteCanvas({ artboards, collaborators, onArtboardDoubleClick
       return;
     }
 
-    const currentIds = new Set(editor.getCurrentPageShapeIds().map((id) => String(id)));
-    const nextIds = new Set(artboards.map((board) => String(createShapeId(board.id))));
-
-    const removeIds = [...currentIds].filter((id) => !nextIds.has(id));
-    if (removeIds.length > 0) {
-      editor.deleteShapes(removeIds);
+    const frameIds = editor
+      .getCurrentPageShapes()
+      .filter((shape) => shape.type === "frame")
+      .map((shape) => shape.id);
+    if (frameIds.length > 0) {
+      editor.deleteShapes(frameIds);
     }
 
     if (artboards.length > 0) {
