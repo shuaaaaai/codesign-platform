@@ -1,0 +1,13 @@
+version: '3.9'
+services:
+  web:
+    extends:
+      file: docker-compose.yml
+      service: web
+    command: sh -lc "corepack enable && pnpm install && pnpm --dir apps/web dev"
+
+  server:
+    extends:
+      file: docker-compose.yml
+      service: server
+    command: sh -lc "corepack enable && pnpm install && pnpm --dir apps/server dev"
