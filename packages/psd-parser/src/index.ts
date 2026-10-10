@@ -39,7 +39,7 @@ export interface ParsedArtboard {
   worldY: number;
   previewUrl?: string;
   layers: ParsedLayer[];
-  // 为兼容旧接口，仅在 fallback 模式下返回 children 字段。
+  // For backwards compatibility, `children` is only populated in fallback mode.
   children?: ParsedLayer[];
   isFallback?: boolean;
   parseError?: string;

@@ -23,7 +23,7 @@ services:
     environment:
       APP_PORT: 4000
       APP_URL: http://localhost:3000
-      DATABASE_URL: postgresql://postgres@postgres:5432/codesign
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379
       MINIO_ENDPOINT: minio
       MINIO_PORT: 9000
