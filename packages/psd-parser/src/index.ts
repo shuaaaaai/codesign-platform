@@ -52,6 +52,8 @@ type PsdNode = {
   right?: number;
   bottom?: number;
   hidden?: boolean;
+  solidColor?: { r?: number; g?: number; b?: number };
+  fillColor?: { r?: number; g?: number; b?: number };
   children?: PsdNode[];
   text?: {
     text?: string;
@@ -106,7 +108,16 @@ function toLayer(node: PsdNode, parentId: string | undefined, id: string): Parse
     borderRadius: 0,
     opacity: 1,
     blendMode: "normal",
-    fills: [{ color: node.text ? rgbToHex(node.text.style?.fillColor) : "transparent", opacity: 1 }],
+    fills: [
+      {
+        color: node.text
+          ? rgbToHex(node.text.style?.fillColor)
+          : node.solidColor || node.fillColor
+            ? rgbToHex(node.solidColor ?? node.fillColor)
+            : "transparent",
+        opacity: 1,
+      },
+    ],
     borders: [],
     shadows: [],
     textStyle: node.text
