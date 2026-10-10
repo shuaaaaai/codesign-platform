@@ -1,27 +1,34 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { DesignFilesService } from "./design-files.service";
+
+interface UploadedDesignFile {
+  originalname: string;
+  buffer: Buffer;
+}
 
 @Controller("design-files")
 export class DesignFilesController {
   constructor(private readonly service: DesignFilesService) {}
 
   @Post("upload")
-  upload(@Body() body: { projectId: string; name: string; source: string }) {
-    return this.service.upload(body);
+  @UseInterceptors(FileInterceptor("file"))
+  upload(@UploadedFile() file: UploadedDesignFile, @Body("projectId") projectId: string, @Body("userId") userId?: string) {
+    return this.service.uploadFile(file, projectId, userId ?? "anonymous-user");
   }
 
   @Get(":id")
   get(@Param("id") id: string) {
-    return this.service.get(id);
+    return this.service.getFile(id);
   }
 
   @Get(":id/artboards")
   artboards(@Param("id") id: string) {
-    return this.service.artboards(id);
+    return this.service.getArtboards(id);
   }
 
   @Get(":id/tokens")
   tokens(@Param("id") id: string) {
-    return this.service.tokens(id);
+    return this.service.getTokens(id);
   }
 }

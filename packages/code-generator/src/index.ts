@@ -1,54 +1,36 @@
+import type { ParsedLayer } from "@codesign/psd-parser";
+
 export type CodeFormat = "css" | "tailwind" | "react" | "vue" | "ios" | "android";
+type CodeLayerInput = Partial<ParsedLayer> & { name: string; fill?: string };
 
-export type CodeLayer = {
-  name: string;
-  width?: number;
-  height?: number;
-  fill?: string;
-  x?: number;
-  y?: number;
-};
+function className(name: string) {
+  return name.toLowerCase().replace(/\s+/g, "-");
+}
 
-/**
- * 代码生成器核心：根据设计层属性推导不同平台的代码模板。
- * 这里通过规则引擎返回稳定、可复制的代码片段，便于后续扩展为真实模板引擎。
- */
-export function generateCode(layer: CodeLayer, format: CodeFormat): string {
-  const fill = layer.fill ?? "#0EA5E9";
-  const width = layer.width ?? 320;
-  const height = layer.height ?? 72;
+export function generateCode(layer: CodeLayerInput, format: CodeFormat): string {
+  const fillColor = layer.fill ?? layer.fills?.[0]?.color ?? "#0EA5E9";
+  const radius = layer.borderRadius ?? 0;
+  const shadow = layer.shadows?.[0];
+  const x = layer.x ?? 0;
+  const y = layer.y ?? 0;
+  const width = layer.width ?? 0;
+  const height = layer.height ?? 0;
+  const opacity = layer.opacity ?? 1;
+  const shadowText = shadow ? `${shadow.x}px ${shadow.y}px ${shadow.blur}px ${shadow.color}` : "none";
 
   switch (format) {
     case "css":
-      return `.${layer.name.toLowerCase().replace(/\s+/g, "-")} {
-  width: ${width}px;
-  height: ${height}px;
-  background: ${fill};
-  border-radius: 16px;
-}`;
+      return `.${className(layer.name)} {\n  position: absolute;\n  left: ${x}px;\n  top: ${y}px;\n  width: ${width}px;\n  height: ${height}px;\n  background: ${fillColor};\n  border-radius: ${radius}px;\n  opacity: ${opacity};\n  box-shadow: ${shadowText};\n}`;
     case "tailwind":
-      return `<button className="w-[${width}px] h-[${height}px] rounded-2xl bg-[${fill}] text-white">${layer.name}</button>`;
+      return `<div className="absolute left-[${x}px] top-[${y}px] w-[${width}px] h-[${height}px] rounded-[${radius}px] bg-[${fillColor}] opacity-[${opacity}]">${layer.name}</div>`;
     case "react":
-      return `export function ${layer.name.replace(/\s+/g, "")}() {
-  return <button style={{ width: ${width}, height: ${height}, background: "${fill}", borderRadius: 16 }}>${layer.name}</button>;
-}`;
+      return `export function ${layer.name.replace(/\s+/g, "")}() {\n  return <div className={styles.${className(layer.name)}} />;\n}\n\n/* CSS Module */\n.${className(layer.name)} {\n  width: ${width}px;\n  height: ${height}px;\n  background: ${fillColor};\n}`;
     case "vue":
-      return `<template>
-  <button class="btn">${layer.name}</button>
-</template>
-
-<style scoped>
-.btn { width: ${width}px; height: ${height}px; background: ${fill}; border-radius: 16px; }
-</style>`;
+      return `<template>\n  <div class="${className(layer.name)}"></div>\n</template>\n\n<style scoped>\n.${className(layer.name)} {\n  width: ${width}px;\n  height: ${height}px;\n  background: ${fillColor};\n}\n</style>`;
     case "ios":
-      return `let button = UIButton(frame: CGRect(x: ${layer.x ?? 0}, y: ${layer.y ?? 0}, width: ${width}, height: ${height}))
-button.backgroundColor = UIColor(hex: "${fill.replace("#", "")}")`;
+      return `let button = UIButton(frame: CGRect(x: ${x}, y: ${y}, width: ${width}, height: ${height}))\nbutton.backgroundColor = UIColor(hex: "${fillColor.replace("#", "")}")\nbutton.layer.cornerRadius = ${radius}`;
     case "android":
-      return `<Button
-  android:layout_width="${width}px"
-  android:layout_height="${height}px"
-  android:background="${fill}"
-  android:text="${layer.name}" />`;
+      return `<View\n  android:layout_width="${width}dp"\n  android:layout_height="${height}dp"\n  android:layout_marginLeft="${x}dp"\n  android:layout_marginTop="${y}dp"\n  android:background="${fillColor}" />`;
     default:
       return "";
   }

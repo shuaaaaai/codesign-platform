@@ -7,16 +7,16 @@ export class ArtboardsController {
 
   @Get(":id")
   get(@Param("id") id: string) {
-    return this.service.get(id);
+    return this.service.getArtboard(id);
   }
 
   @Get(":id/layers")
   layers(@Param("id") id: string) {
-    return this.service.layers(id);
+    return this.service.getArtboardLayers(id);
   }
 
   @Get(":id/preview")
   preview(@Param("id") id: string) {
-    return this.service.preview(id);
+    return this.service.getArtboardPreview(id);
   }
 }

@@ -1,16 +1,31 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Artboard } from "./artboard.entity";
+import { LayerNode } from "../layers/layer-node.entity";
 
 @Injectable()
 export class ArtboardsService {
-  get(id: string) {
-    return { id, name: "Landing", width: 1440, height: 1024, worldX: 0, worldY: 0 };
+  constructor(
+    @InjectRepository(Artboard) private readonly artboardRepository: Repository<Artboard>,
+    @InjectRepository(LayerNode) private readonly layerRepository: Repository<LayerNode>,
+  ) {}
+
+  async getArtboard(id: string) {
+    const artboard = await this.artboardRepository.findOne({ where: { id } });
+    if (!artboard) {
+      throw new NotFoundException("画板不存在");
+    }
+    return artboard;
   }
 
-  layers(id: string) {
-    return { artboardId: id, layers: [{ id: "layer_1", name: "Hero Button", type: "shape", x: 320, y: 200, width: 180, height: 56 }] };
+  async getArtboardLayers(id: string) {
+    const layers = await this.layerRepository.find({ where: { artboardId: id } });
+    return { artboardId: id, layers };
   }
 
-  preview(id: string) {
-    return { artboardId: id, previewUrl: "/uploads/landing.png" };
+  async getArtboardPreview(id: string) {
+    const artboard = await this.getArtboard(id);
+    return { artboardId: id, previewUrl: artboard.previewUrl };
   }
 }

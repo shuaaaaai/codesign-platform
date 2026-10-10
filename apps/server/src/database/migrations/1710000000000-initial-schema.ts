@@ -7,30 +7,49 @@ export class InitialSchema1710000000000 implements MigrationInterface {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         name VARCHAR NOT NULL,
         slug VARCHAR,
-        "createdAt" TIMESTAMP DEFAULT NOW()
+        "createdAt" TIMESTAMP DEFAULT NOW(),
+        "updatedAt" TIMESTAMP DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         email VARCHAR NOT NULL UNIQUE,
         name VARCHAR NOT NULL,
+        "passwordHash" VARCHAR NOT NULL,
+        "refreshTokenHash" VARCHAR,
         "avatarUrl" VARCHAR,
+        "createdAt" TIMESTAMP DEFAULT NOW(),
+        "updatedAt" TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS team_members (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        "organizationId" UUID NOT NULL,
+        "userId" UUID NOT NULL,
+        role VARCHAR NOT NULL DEFAULT 'member',
         "createdAt" TIMESTAMP DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS projects (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         name VARCHAR NOT NULL,
-        description VARCHAR,
-        "createdAt" TIMESTAMP DEFAULT NOW()
+        description TEXT,
+        "coverUrl" VARCHAR,
+        "memberCount" INT DEFAULT 1,
+        "createdAt" TIMESTAMP DEFAULT NOW(),
+        "updatedAt" TIMESTAMP DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS design_files (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         name VARCHAR NOT NULL,
         "projectId" UUID NOT NULL,
+        "userId" UUID,
+        "sourceUrl" VARCHAR,
         "previewUrl" VARCHAR,
-        "createdAt" TIMESTAMP DEFAULT NOW()
+        status VARCHAR NOT NULL DEFAULT 'uploading',
+        "createdAt" TIMESTAMP DEFAULT NOW(),
+        "updatedAt" TIMESTAMP DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS artboards (
@@ -39,6 +58,8 @@ export class InitialSchema1710000000000 implements MigrationInterface {
         name VARCHAR NOT NULL,
         "worldX" DOUBLE PRECISION DEFAULT 0,
         "worldY" DOUBLE PRECISION DEFAULT 0,
+        width DOUBLE PRECISION DEFAULT 0,
+        height DOUBLE PRECISION DEFAULT 0,
         "previewUrl" VARCHAR
       );
 
@@ -51,7 +72,16 @@ export class InitialSchema1710000000000 implements MigrationInterface {
         x DOUBLE PRECISION DEFAULT 0,
         y DOUBLE PRECISION DEFAULT 0,
         width DOUBLE PRECISION DEFAULT 0,
-        height DOUBLE PRECISION DEFAULT 0
+        height DOUBLE PRECISION DEFAULT 0,
+        rotation DOUBLE PRECISION DEFAULT 0,
+        opacity DOUBLE PRECISION DEFAULT 1,
+        "borderRadius" DOUBLE PRECISION DEFAULT 0,
+        "blendMode" VARCHAR DEFAULT 'normal',
+        fills JSONB DEFAULT '[]',
+        borders JSONB DEFAULT '[]',
+        shadows JSONB DEFAULT '[]',
+        "textStyle" JSONB,
+        "sourceAssetUrl" VARCHAR
       );
 
       CREATE TABLE IF NOT EXISTS design_tokens (
@@ -66,6 +96,9 @@ export class InitialSchema1710000000000 implements MigrationInterface {
         "artboardId" UUID NOT NULL,
         "authorId" UUID NOT NULL,
         content VARCHAR NOT NULL,
+        x DOUBLE PRECISION DEFAULT 0,
+        y DOUBLE PRECISION DEFAULT 0,
+        "parentId" UUID,
         resolved BOOLEAN DEFAULT FALSE,
         "createdAt" TIMESTAMP DEFAULT NOW()
       );
@@ -87,6 +120,7 @@ export class InitialSchema1710000000000 implements MigrationInterface {
     await queryRunner.query(`DROP TABLE IF EXISTS artboards;`);
     await queryRunner.query(`DROP TABLE IF EXISTS design_files;`);
     await queryRunner.query(`DROP TABLE IF EXISTS projects;`);
+    await queryRunner.query(`DROP TABLE IF EXISTS team_members;`);
     await queryRunner.query(`DROP TABLE IF EXISTS users;`);
     await queryRunner.query(`DROP TABLE IF EXISTS organizations;`);
   }
