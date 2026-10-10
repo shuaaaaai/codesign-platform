@@ -12,7 +12,7 @@ export class InitialSchema1710000000000 implements MigrationInterface {
 
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        email VARCHAR NOT NULL,
+        email VARCHAR NOT NULL UNIQUE,
         name VARCHAR NOT NULL,
         "avatarUrl" VARCHAR,
         "createdAt" TIMESTAMP DEFAULT NOW()

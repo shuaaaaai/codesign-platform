@@ -2,8 +2,8 @@ export type CodeFormat = "css" | "tailwind" | "react" | "vue" | "ios" | "android
 
 export type CodeLayer = {
   name: string;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
   fill?: string;
   x?: number;
   y?: number;
