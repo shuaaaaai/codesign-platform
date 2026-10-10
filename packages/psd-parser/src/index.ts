@@ -81,7 +81,7 @@ function detectType(node: PsdNode): LayerType {
   return "shape";
 }
 
-function toLayer(node: PsdNode, parentId: string | undefined, index: number): ParsedLayer | null {
+function toLayer(node: PsdNode, parentId: string | undefined, id: string): ParsedLayer | null {
   if (node.hidden) {
     return null;
   }
@@ -90,12 +90,10 @@ function toLayer(node: PsdNode, parentId: string | undefined, index: number): Pa
   const top = node.top ?? 0;
   const right = node.right ?? left;
   const bottom = node.bottom ?? top;
-  const id = `layer-${index}`;
-
   return {
     id,
     parentId,
-    name: node.name ?? `Layer ${index}`,
+    name: node.name ?? id,
     type: detectType(node),
     x: left,
     y: top,
@@ -122,20 +120,21 @@ function toLayer(node: PsdNode, parentId: string | undefined, index: number): Pa
   };
 }
 
-function flattenLayers(nodes: PsdNode[] | undefined, parentId?: string): ParsedLayer[] {
+function flattenLayers(nodes: PsdNode[] | undefined, parentId?: string, counter: { value: number } = { value: 0 }): ParsedLayer[] {
   if (!nodes?.length) {
     return [];
   }
 
   const layers: ParsedLayer[] = [];
-  nodes.forEach((node, index) => {
-    const layer = toLayer(node, parentId, index + 1 + layers.length);
+  nodes.forEach((node) => {
+    counter.value += 1;
+    const layer = toLayer(node, parentId, `layer-${counter.value}`);
     if (!layer) {
       return;
     }
     layers.push(layer);
     if (node.children?.length) {
-      layers.push(...flattenLayers(node.children, layer.id));
+      layers.push(...flattenLayers(node.children, layer.id, counter));
     }
   });
   return layers;

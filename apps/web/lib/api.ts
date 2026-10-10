@@ -12,7 +12,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(text || `请求失败: ${response.status}`);
+    throw new Error(text || `Request failed: ${response.status}`);
   }
 
   return (await response.json()) as T;
