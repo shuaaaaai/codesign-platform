@@ -14,6 +14,15 @@ export class Comment {
   @Column({ type: "text" })
   content!: string;
 
+  @Column({ type: "float", default: 0 })
+  x!: number;
+
+  @Column({ type: "float", default: 0 })
+  y!: number;
+
+  @Column({ type: "uuid", nullable: true })
+  parentId?: string | null;
+
   @Column({ type: "boolean", default: false })
   resolved!: boolean;
 

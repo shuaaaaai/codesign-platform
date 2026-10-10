@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { LayersService } from "./layers.service";
+import type { CodeFormat } from "@codesign/code-generator";
 
 @Controller("layers")
 export class LayersController {
@@ -7,11 +8,16 @@ export class LayersController {
 
   @Get(":id")
   get(@Param("id") id: string) {
-    return this.service.get(id);
+    return this.service.getLayer(id);
+  }
+
+  @Get("artboard/:artboardId")
+  artboardLayers(@Param("artboardId") artboardId: string) {
+    return this.service.getArtboardLayers(artboardId);
   }
 
   @Get(":id/code")
-  code(@Param("id") id: string, @Query("format") format: string) {
-    return this.service.code(id, format);
+  code(@Param("id") id: string, @Query("format") format: CodeFormat = "css") {
+    return this.service.getLayerCode(id, format);
   }
 }

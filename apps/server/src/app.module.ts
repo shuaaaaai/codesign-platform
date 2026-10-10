@@ -18,6 +18,7 @@ import { LayerNode } from "./modules/layers/layer-node.entity";
 import { Comment } from "./modules/comments/comment.entity";
 import { DesignToken } from "./modules/design-files/design-token.entity";
 import { Asset } from "./modules/design-files/asset.entity";
+import { TeamMember } from "./modules/organizations/team-member.entity";
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { Asset } from "./modules/design-files/asset.entity";
       useFactory: (config: ConfigService) => ({
         type: "postgres",
         url: config.get<string>("DATABASE_URL") ?? "postgresql://localhost:5432/codesign",
-        entities: [Organization, User, Project, DesignFile, Artboard, LayerNode, Comment, DesignToken, Asset],
+        entities: [Organization, TeamMember, User, Project, DesignFile, Artboard, LayerNode, Comment, DesignToken, Asset],
         synchronize: false,
         logging: false,
       }),

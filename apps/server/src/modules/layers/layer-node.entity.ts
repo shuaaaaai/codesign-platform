@@ -15,7 +15,7 @@ export class LayerNode {
   name!: string;
 
   @Column({ type: "varchar", default: "group" })
-  type!: string;
+  type!: "group" | "text" | "shape" | "image";
 
   @Column({ type: "float", default: 0 })
   x!: number;
@@ -28,4 +28,39 @@ export class LayerNode {
 
   @Column({ type: "float", default: 0 })
   height!: number;
+
+  @Column({ type: "float", default: 0 })
+  rotation!: number;
+
+  @Column({ type: "float", default: 1 })
+  opacity!: number;
+
+  @Column({ type: "float", default: 0 })
+  borderRadius!: number;
+
+  @Column({ type: "varchar", default: "normal" })
+  blendMode!: string;
+
+  @Column({ type: "jsonb", default: () => "'[]'" })
+  fills!: Array<{ color: string; opacity: number }>;
+
+  @Column({ type: "jsonb", default: () => "'[]'" })
+  borders!: Array<{ color: string; width: number; style: string }>;
+
+  @Column({ type: "jsonb", default: () => "'[]'" })
+  shadows!: Array<{ x: number; y: number; blur: number; color: string; opacity: number }>;
+
+  @Column({ type: "jsonb", nullable: true })
+  textStyle?: {
+    fontFamily: string;
+    fontSize: number;
+    fontWeight: number;
+    lineHeight: number;
+    letterSpacing: number;
+    textAlign: string;
+    color: string;
+  };
+
+  @Column({ type: "varchar", nullable: true })
+  sourceAssetUrl?: string;
 }

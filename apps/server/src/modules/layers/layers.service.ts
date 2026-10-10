@@ -1,18 +1,29 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { generateCode, type CodeFormat } from "@codesign/code-generator";
+import { LayerNode } from "./layer-node.entity";
 
 @Injectable()
 export class LayersService {
-  get(id: string) {
-    return { id, name: "Hero Button", type: "button", x: 320, y: 200, width: 180, height: 56 };
+  constructor(@InjectRepository(LayerNode) private readonly layerRepository: Repository<LayerNode>) {}
+
+  async getLayer(id: string) {
+    const layer = await this.layerRepository.findOne({ where: { id } });
+    if (!layer) {
+      throw new NotFoundException("图层不存在");
+    }
+    return layer;
   }
 
-  code(id: string, format: string) {
-    const target = format || "css";
-    return { layerId: id, format: target, code: `.button {
-  display: inline-flex;
-  border-radius: 16px;
-  background: #0ea5e9;
-  color: white;
-}` };
+  async getArtboardLayers(artboardId: string) {
+    const layers = await this.layerRepository.find({ where: { artboardId } });
+    return { artboardId, layers };
+  }
+
+  async getLayerCode(id: string, format: CodeFormat) {
+    const layer = await this.getLayer(id);
+    const code = generateCode(layer, format);
+    return { layerId: id, format, code };
   }
 }

@@ -1,39 +1,106 @@
 "use client";
 
-const boards = [
-  { id: "b1", name: "Landing", x: 80, y: 60, width: 440, height: 280, accent: "from-rose-500 to-orange-400" },
-  { id: "b2", name: "Dashboard", x: 620, y: 120, width: 420, height: 300, accent: "from-sky-500 to-cyan-400" },
-  { id: "b3", name: "Pricing", x: 180, y: 500, width: 500, height: 260, accent: "from-violet-500 to-purple-400" },
-  { id: "b4", name: "Checkout", x: 760, y: 560, width: 430, height: 260, accent: "from-emerald-500 to-teal-400" },
-];
+import { useEffect, useMemo, useRef } from "react";
+import { Tldraw, createShapeId, type Editor } from "@tldraw/tldraw";
+import "@tldraw/tldraw/tldraw.css";
+import type { Artboard, Collaborator } from "@/types/design";
 
-export function InfiniteCanvas() {
-  return (
-    <div className="relative h-[720px] overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 shadow-soft">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(148,163,184,0.18),_transparent_55%)]" />
-      <div className="absolute left-6 top-6 z-10 flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-3 py-1.5 text-xs font-medium text-slate-600 backdrop-blur-sm">
-        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-        4 online collaborators
-      </div>
-      <div className="absolute inset-0" style={{ transform: "scale(1)" }}>
-        {boards.map((board) => (
+interface InfiniteCanvasProps {
+  artboards: Artboard[];
+  collaborators: Collaborator[];
+  onArtboardDoubleClick: (artboardId: string) => void;
+  onUpload?: (file: File) => void;
+}
+
+export function InfiniteCanvas({ artboards, collaborators, onArtboardDoubleClick, onUpload }: InfiniteCanvasProps) {
+  const editorRef = useRef<Editor | null>(null);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) {
+      return;
+    }
+
+    const currentIds = new Set(editor.getCurrentPageShapeIds().map((id) => String(id)));
+    const nextIds = new Set(artboards.map((board) => String(createShapeId(board.id))));
+
+    const removeIds = [...currentIds].filter((id) => !nextIds.has(id));
+    if (removeIds.length > 0) {
+      editor.deleteShapes(removeIds);
+    }
+
+    if (artboards.length > 0) {
+      editor.createShapes(
+        artboards.map((board) => ({
+          id: createShapeId(board.id),
+          type: "frame",
+          x: board.worldX,
+          y: board.worldY,
+          props: {
+            w: board.width,
+            h: board.height,
+            name: `${board.name} (${board.width}×${board.height})`,
+          },
+          meta: {
+            artboardId: board.id,
+          },
+        })),
+      );
+    }
+  }, [artboards]);
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const file = event.dataTransfer.files?.[0];
+    if (file && onUpload) {
+      onUpload(file);
+    }
+  };
+
+  const handleDoubleClick = () => {
+    const editor = editorRef.current;
+    if (!editor) {
+      return;
+    }
+    const selected = editor.getSelectedShapes();
+    const first = selected[0];
+    const artboardId = String(first?.meta?.artboardId ?? "");
+    if (artboardId) {
+      onArtboardDoubleClick(artboardId);
+    }
+  };
+
+  const collaboratorNodes = useMemo(
+    () =>
+      collaborators.map((member) => (
+        <div key={member.id} className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1">
           <div
-            key={board.id}
-            className="absolute cursor-pointer rounded-2xl border border-slate-200 bg-white p-3 shadow-lg transition hover:-translate-y-0.5"
-            style={{ left: board.x, top: board.y, width: board.width, height: board.height }}
+            className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold text-white"
+            style={{ backgroundColor: member.color }}
           >
-            <div className={`mb-3 h-28 rounded-xl bg-gradient-to-br ${board.accent}`} />
-            <div className="space-y-2">
-              <div className="h-3 w-24 rounded-full bg-slate-200" />
-              <div className="h-2.5 w-36 rounded-full bg-slate-100" />
-              <div className="h-2.5 w-28 rounded-full bg-slate-100" />
-            </div>
-            <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
-              <span>{board.name}</span>
-              <span>1440 × 1024</span>
-            </div>
+            {member.avatar ? <img src={member.avatar} alt={member.name} className="h-7 w-7 rounded-full" /> : member.name.slice(0, 1).toUpperCase()}
           </div>
-        ))}
+          <span className="text-xs text-slate-600">{member.name}</span>
+        </div>
+      )),
+    [collaborators],
+  );
+
+  return (
+    <div className="relative h-[720px] overflow-hidden rounded-2xl border border-slate-200 bg-white" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
+      <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">{collaboratorNodes}</div>
+      {artboards.length === 0 && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/90 text-lg font-medium text-slate-500">
+          拖拽 PSD 文件到此处上传
+        </div>
+      )}
+      <div className="h-full w-full" onDoubleClick={handleDoubleClick}>
+        <Tldraw
+          onMount={(editor) => {
+            editorRef.current = editor;
+            editor.updateInstanceState({ isDebugMode: false });
+          }}
+        />
       </div>
     </div>
   );

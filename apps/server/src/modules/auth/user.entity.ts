@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity({ name: "users" })
 export class User {
@@ -11,9 +11,18 @@ export class User {
   @Column({ type: "varchar" })
   name!: string;
 
+  @Column({ type: "varchar" })
+  passwordHash!: string;
+
+  @Column({ type: "varchar", nullable: true })
+  refreshTokenHash?: string | null;
+
   @Column({ type: "varchar", nullable: true })
   avatarUrl?: string;
 
   @CreateDateColumn()
   createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
 }

@@ -17,6 +17,12 @@ export class Artboard {
   @Column({ type: "float", default: 0 })
   worldY!: number;
 
+  @Column({ type: "float", default: 0 })
+  width!: number;
+
+  @Column({ type: "float", default: 0 })
+  height!: number;
+
   @Column({ type: "varchar", nullable: true })
   previewUrl?: string;
 }
