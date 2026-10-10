@@ -18,7 +18,7 @@ services:
     ports:
       - '4000:4000'
     environment:
-      DATABASE_URL: postgresql://postgres:5432/codesign
+      DATABASE_URL: ******postgres:5432/codesign
       REDIS_URL: redis://redis:6379
       MINIO_ENDPOINT: minio
       MINIO_PORT: 9000
