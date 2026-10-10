@@ -39,6 +39,7 @@ export interface ParsedArtboard {
   worldY: number;
   previewUrl?: string;
   layers: ParsedLayer[];
+  // 为兼容旧接口，仅在 fallback 模式下返回 children 字段。
   children?: ParsedLayer[];
   isFallback?: boolean;
   parseError?: string;
@@ -105,7 +106,7 @@ function toLayer(node: PsdNode, parentId: string | undefined, id: string): Parse
     borderRadius: 0,
     opacity: 1,
     blendMode: "normal",
-    fills: [{ color: rgbToHex(node.text?.style?.fillColor), opacity: 1 }],
+    fills: [{ color: node.text ? rgbToHex(node.text.style?.fillColor) : "transparent", opacity: 1 }],
     borders: [],
     shadows: [],
     textStyle: node.text
@@ -215,7 +216,6 @@ export async function parsePSD(buffer: Buffer): Promise<ParsedArtboard[]> {
       worldY: 0,
       previewUrl: undefined,
       layers,
-      children: layers,
     },
   ];
 }
