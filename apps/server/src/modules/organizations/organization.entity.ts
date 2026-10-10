@@ -5,10 +5,10 @@ export class Organization {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column()
+  @Column({ type: "varchar" })
   name!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", nullable: true })
   slug?: string;
 
   @CreateDateColumn()

@@ -61,13 +61,13 @@ docker compose -f docker/docker-compose.yml up --build
 - `DATABASE_URL`: PostgreSQL 连接串
 - `REDIS_URL`: Redis 地址
 - `MINIO_*`: 对象存储配置
-- `JWT_SECRET`: 登录签名保钥
+- `JWT_SECRET`: 登录签名密钥
 - `NEXT_PUBLIC_API_URL`: Web 端 API 地址
 
 ## 关键技术栈
 
 - Next.js 14
-- NestJS 10
+- NestJS 12
 - TypeORM
 - PostgreSQL
 - Redis + BullMQ

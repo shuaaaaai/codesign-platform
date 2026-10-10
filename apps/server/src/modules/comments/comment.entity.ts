@@ -5,16 +5,16 @@ export class Comment {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column()
+  @Column({ type: "uuid" })
   artboardId!: string;
 
-  @Column()
+  @Column({ type: "uuid" })
   authorId!: string;
 
-  @Column()
+  @Column({ type: "text" })
   content!: string;
 
-  @Column({ default: false })
+  @Column({ type: "boolean", default: false })
   resolved!: boolean;
 
   @CreateDateColumn()

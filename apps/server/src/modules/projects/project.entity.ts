@@ -5,10 +5,10 @@ export class Project {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column()
+  @Column({ type: "varchar" })
   name!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "text", nullable: true })
   description?: string;
 
   @CreateDateColumn()

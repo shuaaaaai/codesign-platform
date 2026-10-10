@@ -5,27 +5,27 @@ export class LayerNode {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column()
+  @Column({ type: "uuid" })
   artboardId!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "uuid", nullable: true })
   parentId?: string;
 
-  @Column()
+  @Column({ type: "varchar" })
   name!: string;
 
-  @Column({ default: "group" })
+  @Column({ type: "varchar", default: "group" })
   type!: string;
 
-  @Column({ default: 0 })
+  @Column({ type: "float", default: 0 })
   x!: number;
 
-  @Column({ default: 0 })
+  @Column({ type: "float", default: 0 })
   y!: number;
 
-  @Column({ default: 0 })
+  @Column({ type: "float", default: 0 })
   width!: number;
 
-  @Column({ default: 0 })
+  @Column({ type: "float", default: 0 })
   height!: number;
 }

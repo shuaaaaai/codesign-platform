@@ -5,18 +5,18 @@ export class Artboard {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column()
+  @Column({ type: "uuid" })
   designFileId!: string;
 
-  @Column()
+  @Column({ type: "varchar" })
   name!: string;
 
-  @Column({ default: 0 })
+  @Column({ type: "float", default: 0 })
   worldX!: number;
 
-  @Column({ default: 0 })
+  @Column({ type: "float", default: 0 })
   worldY!: number;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", nullable: true })
   previewUrl?: string;
 }

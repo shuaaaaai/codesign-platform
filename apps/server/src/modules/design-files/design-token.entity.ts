@@ -5,12 +5,12 @@ export class DesignToken {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column()
+  @Column({ type: "varchar" })
   name!: string;
 
-  @Column()
+  @Column({ type: "varchar" })
   value!: string;
 
-  @Column()
+  @Column({ type: "uuid" })
   fileId!: string;
 }

@@ -27,9 +27,9 @@ import { Asset } from "./modules/design-files/asset.entity";
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         type: "postgres",
-        url: config.get<string>("DATABASE_URL") ?? "******localhost:5432/codesign",
+        url: config.get<string>("DATABASE_URL") ?? "postgresql://localhost:5432/codesign",
         entities: [Organization, User, Project, DesignFile, Artboard, LayerNode, Comment, DesignToken, Asset],
-        synchronize: true,
+        synchronize: false,
         logging: false,
       }),
     }),

@@ -1,7 +1,6 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
-import { AppModule } from "./app.module";
 
 export function normalizePort(port?: string): number {
   const value = Number(port ?? "4000");
@@ -9,6 +8,7 @@ export function normalizePort(port?: string): number {
 }
 
 export async function bootstrap() {
+  const { AppModule } = await import("./app.module");
   const app = await NestFactory.create(AppModule);
   app.enableCors();
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
