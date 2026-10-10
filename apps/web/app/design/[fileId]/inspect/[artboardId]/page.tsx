@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -71,7 +72,7 @@ export default function InspectPage() {
             {!layersLoading && (
               <>
                 {artboardData?.previewUrl ? (
-                  <img src={artboardData.previewUrl} alt={artboardData.name} className="h-full w-full rounded-2xl object-contain" />
+                  <Image src={artboardData.previewUrl} alt={artboardData.name} fill className="rounded-2xl object-contain" />
                 ) : (
                   <div className="flex h-full items-center justify-center rounded-2xl bg-slate-100 text-slate-500">暂无预览图</div>
                 )}

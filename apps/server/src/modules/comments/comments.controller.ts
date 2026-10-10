@@ -1,4 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { CreateCommentDto } from "./dto/create-comment.dto";
+import { ReplyCommentDto } from "./dto/reply-comment.dto";
 import { CommentsService } from "./comments.service";
 
 @Controller("comments")
@@ -11,7 +13,7 @@ export class CommentsController {
   }
 
   @Post()
-  create(@Body() body: { artboardId: string; content: string; x: number; y: number; authorId?: string }) {
+  create(@Body() body: CreateCommentDto) {
     return this.service.createComment(body);
   }
 
@@ -21,7 +23,7 @@ export class CommentsController {
   }
 
   @Post(":id/reply")
-  reply(@Param("id") id: string, @Body() body: { content: string }) {
+  reply(@Param("id") id: string, @Body() body: ReplyCommentDto) {
     return this.service.replyComment(id, body.content);
   }
 }

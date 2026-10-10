@@ -3,7 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { API_BASE_URL } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 
 interface AuthResponse {
@@ -22,15 +22,10 @@ export default function HomePage() {
   const authMutation = useMutation({
     mutationFn: async () => {
       const endpoint = mode === "login" ? "/auth/login" : "/auth/register";
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      return apiFetch<AuthResponse>(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(mode === "login" ? { email, password } : { email, password, name }),
       });
-      if (!response.ok) {
-        throw new Error("认证失败");
-      }
-      return (await response.json()) as AuthResponse;
     },
     onSuccess: (data) => {
       login(data.tokens.accessToken, data.user);

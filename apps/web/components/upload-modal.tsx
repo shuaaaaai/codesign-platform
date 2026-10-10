@@ -3,6 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
+import { apiFetch } from "@/lib/api";
 
 interface UploadModalProps {
   projectId: string;
@@ -55,14 +56,10 @@ export function UploadModal({ projectId, apiBaseUrl, wsUrl, open, onClose, onCom
       formData.append("file", file);
       formData.append("projectId", projectId);
 
-      const response = await fetch(`${apiBaseUrl}/design-files/upload`, {
+      return apiFetch<{ fileId: string }>("/design-files/upload", {
         method: "POST",
         body: formData,
       });
-      if (!response.ok) {
-        throw new Error("上传失败");
-      }
-      return (await response.json()) as { fileId: string };
     },
     onSuccess: (data) => {
       setFileId(data.fileId);

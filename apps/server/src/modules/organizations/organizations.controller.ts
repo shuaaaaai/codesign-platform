@@ -1,4 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
+import { CreateOrganizationDto } from "./dto/create-organization.dto";
+import { InviteMemberDto } from "./dto/invite-member.dto";
+import { UpdateOrganizationDto } from "./dto/update-organization.dto";
 import { OrganizationsService } from "./organizations.service";
 
 @Controller("organizations")
@@ -11,7 +14,7 @@ export class OrganizationsController {
   }
 
   @Post()
-  create(@Body() body: { name: string }) {
+  create(@Body() body: CreateOrganizationDto) {
     return this.service.create(body);
   }
 
@@ -21,7 +24,7 @@ export class OrganizationsController {
   }
 
   @Patch(":id")
-  update(@Param("id") id: string, @Body() body: { name: string }) {
+  update(@Param("id") id: string, @Body() body: UpdateOrganizationDto) {
     return this.service.update(id, body);
   }
 
@@ -36,7 +39,7 @@ export class OrganizationsController {
   }
 
   @Post(":id/invite")
-  invite(@Param("id") id: string, @Body() body: { email: string; role: string }) {
+  invite(@Param("id") id: string, @Body() body: InviteMemberDto) {
     return this.service.invite(id, body);
   }
 }
