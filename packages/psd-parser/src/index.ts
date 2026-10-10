@@ -40,6 +40,8 @@ export interface ParsedArtboard {
   previewUrl?: string;
   layers: ParsedLayer[];
   children?: ParsedLayer[];
+  isFallback?: boolean;
+  parseError?: string;
 }
 
 type PsdNode = {
@@ -148,7 +150,9 @@ export async function parsePSD(buffer: Buffer): Promise<ParsedArtboard[]> {
   let psd: (PsdNode & { children?: PsdNode[]; width?: number; height?: number }) | null = null;
   try {
     psd = readPsd(buffer) as PsdNode & { children?: PsdNode[]; width?: number; height?: number };
-  } catch {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "unknown parse error";
+    console.warn(`[psd-parser] readPsd failed, using fallback output: ${errorMessage}`);
     const fallbackLayers: ParsedLayer[] = [
       {
         id: "layer-1",
@@ -194,6 +198,8 @@ export async function parsePSD(buffer: Buffer): Promise<ParsedArtboard[]> {
         previewUrl: undefined,
         layers: fallbackLayers,
         children: fallbackLayers,
+        isFallback: true,
+        parseError: errorMessage,
       },
     ];
   }
