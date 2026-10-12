@@ -4,6 +4,8 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { randomUUID } from "crypto";
 import { Queue } from "bullmq";
+import { JwtService } from "@nestjs/jwt";
+import { Client as MinioClient } from "minio";
 import { parsePSD, type ParsedArtboard } from "@codesign/psd-parser";
 import { DesignFile } from "./design-file.entity";
 import { Artboard } from "../artboards/artboard.entity";
@@ -19,6 +21,8 @@ interface UploadedDesignFile {
 @Injectable()
 export class DesignFilesService implements OnModuleDestroy {
   private readonly queue: Queue;
+  private readonly minioClient: MinioClient;
+  private readonly minioBucket: string;
 
   constructor(
     @InjectRepository(DesignFile) private readonly fileRepository: Repository<DesignFile>,
@@ -27,6 +31,7 @@ export class DesignFilesService implements OnModuleDestroy {
     @InjectRepository(DesignToken) private readonly tokenRepository: Repository<DesignToken>,
     private readonly collaborationGateway: CollaborationGateway,
     private readonly configService: ConfigService,
+    private readonly jwtService: JwtService,
   ) {
     this.queue = new Queue("psd-processing", {
       connection: {
@@ -34,6 +39,28 @@ export class DesignFilesService implements OnModuleDestroy {
         port: Number(this.configService.get<string>("REDIS_PORT") ?? "6379"),
       },
     });
+    this.minioBucket = this.configService.get<string>("MINIO_BUCKET") ?? "design-assets";
+    this.minioClient = new MinioClient({
+      endPoint: this.configService.get<string>("MINIO_ENDPOINT") ?? "localhost",
+      port: Number(this.configService.get<string>("MINIO_PORT") ?? "9000"),
+      useSSL: false,
+      accessKey: this.configService.get<string>("MINIO_ACCESS_KEY") ?? "minioadmin",
+      secretKey: this.configService.get<string>("MINIO_SECRET_KEY") ?? "minioadmin",
+    });
+  }
+
+  async onModuleInit() {
+    const exists = await this.minioClient.bucketExists(this.minioBucket);
+    if (!exists) {
+      await this.minioClient.makeBucket(this.minioBucket);
+      await this.minioClient.setBucketPolicy(
+        this.minioBucket,
+        JSON.stringify({
+          Version: "2012-10-17",
+          Statement: [{ Effect: "Allow", Principal: { AWS: ["*"] }, Action: ["s3:GetObject"], Resource: [`arn:aws:s3:::${this.minioBucket}/*`] }],
+        }),
+      );
+    }
   }
 
   async onModuleDestroy() {
@@ -62,11 +89,13 @@ export class DesignFilesService implements OnModuleDestroy {
     if (!file) {
       throw new NotFoundException("上传文件不存在");
     }
+    const psdKey = `psd/${randomUUID()}/${file.originalname}`;
+    await this.minioClient.putObject(this.minioBucket, psdKey, file.buffer);
     const designFile = this.fileRepository.create({
       name: file.originalname,
       projectId,
       userId,
-      sourceUrl: `minio://design-assets/${file.originalname}`,
+      sourceUrl: `http://${this.configService.get("MINIO_ENDPOINT") ?? "localhost"}:${this.configService.get("MINIO_PORT") ?? "9000"}/${this.minioBucket}/${psdKey}`,
       status: "processing",
     });
     const saved = await this.fileRepository.save(designFile);
@@ -161,6 +190,7 @@ export class DesignFilesService implements OnModuleDestroy {
       }
       saved.status = "ready";
       await this.fileRepository.save(saved);
+      await this.createVersion(saved.id, "初始版本");
       this.collaborationGateway.emitParseProgress(saved.id, 100, "解析完成");
     } catch (error) {
       saved.status = "error";
@@ -204,5 +234,31 @@ export class DesignFilesService implements OnModuleDestroy {
   async getTokens(fileId: string) {
     const tokens = await this.tokenRepository.find({ where: { fileId } });
     return { fileId, tokens };
+  }
+
+  async generateShareToken(fileId: string) {
+    const token = await this.jwtService.signAsync({ fileId, readonly: true }, { expiresIn: "7d" });
+    return { shareUrl: `/share/${fileId}?token=${token}`, token };
+  }
+
+  async createVersion(fileId: string, label = "Auto Save") {
+    const designFile = await this.fileRepository.findOne({ where: { id: fileId } });
+    if (!designFile) {
+      throw new NotFoundException("设计文件不存在");
+    }
+
+    const artboards = await this.artboardRepository.find({ where: { designFileId: fileId } });
+    const snapshotData = {} as Record<string, unknown>;
+    for (const artboard of artboards) {
+      const layers = await this.layerRepository.find({ where: { artboardId: artboard.id } });
+      snapshotData[artboard.id] = { artboard, layers };
+    }
+
+    const version = this.fileRepository.manager.getRepository("versions").create({
+      fileId,
+      label,
+      snapshotData,
+    });
+    return this.fileRepository.manager.getRepository("versions").save(version);
   }
 }

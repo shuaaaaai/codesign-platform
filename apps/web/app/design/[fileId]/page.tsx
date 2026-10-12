@@ -8,6 +8,8 @@ import { io, type Socket } from "socket.io-client";
 import { InfiniteCanvas } from "@/components/infinite-canvas";
 import { UploadModal } from "@/components/upload-modal";
 import { apiFetch, API_BASE_URL } from "@/lib/api";
+import { getWsUrl } from "@/lib/runtime-config";
+import { useAuthStore } from "@/store/auth";
 import { useCanvasStore } from "@/store/canvas";
 import type { Artboard, Collaborator } from "@/types/design";
 
@@ -15,7 +17,8 @@ export default function DesignPage() {
   const params = useParams<{ fileId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:4000";
+  const wsUrl = getWsUrl();
+  const user = useAuthStore((state) => state.user);
   const [openUpload, setOpenUpload] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
 
@@ -43,7 +46,13 @@ export default function DesignPage() {
 
   useEffect(() => {
     const socket: Socket = io(`${wsUrl}/collaboration`, { transports: ["websocket"] });
-    socket.emit("join-room", fileId);
+    const colors = ["#0EA5E9", "#8B5CF6", "#EC4899", "#10B981", "#F59E0B"];
+    const userColor = colors[Math.abs(user?.id?.charCodeAt(0) ?? 0) % colors.length];
+    socket.emit("join-room", {
+      fileId,
+      userName: user?.name ?? user?.email ?? "未知用户",
+      color: userColor,
+    });
     socket.on("presence", (payload: { collaborators: Collaborator[] }) => {
       setCollaborators(payload.collaborators);
     });
@@ -51,7 +60,7 @@ export default function DesignPage() {
       socket.emit("leave-room", fileId);
       socket.disconnect();
     };
-  }, [fileId, setCollaborators, wsUrl]);
+  }, [fileId, setCollaborators, user?.email, user?.id, user?.name, wsUrl]);
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {

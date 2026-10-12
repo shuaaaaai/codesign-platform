@@ -22,6 +22,7 @@ export default function DashboardPage() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
 
@@ -43,6 +44,10 @@ export default function DashboardPage() {
       await queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
+
+  const filteredProjects = (data ?? []).filter((project) =>
+    project.name.toLowerCase().includes(searchQuery.trim().toLowerCase()),
+  );
 
   return (
     <main className="min-h-screen bg-slate-100 p-6">
@@ -73,11 +78,30 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        <div className="mb-5">
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="搜索项目"
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-0 placeholder:text-slate-400 focus:border-slate-300"
+          />
+        </div>
+
         {isLoading && <div className="grid gap-5 md:grid-cols-3">{Array.from({ length: 3 }).map((_, idx) => <div key={idx} className="h-64 animate-pulse rounded-3xl bg-slate-200" />)}</div>}
         {isError && <div className="rounded-xl bg-rose-50 p-4 text-rose-600">项目加载失败</div>}
+        {!isLoading && !isError && filteredProjects.length === 0 && (data ?? []).length === 0 && (
+          <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-16 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-3xl">📁</div>
+            <p className="text-lg font-semibold text-slate-800">还没有项目</p>
+            <p className="mt-2 text-sm text-slate-500">创建第一个项目开始设计协作</p>
+            <button className="mt-6 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white" type="button" onClick={() => setOpen(true)}>
+              新建项目
+            </button>
+          </div>
+        )}
         {!isLoading && !isError && (
           <div className="grid gap-5 md:grid-cols-3">
-            {(data ?? []).map((project) => (
+            {filteredProjects.map((project) => (
               <Link href={`/project/${project.id}`} key={project.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
                 <div className="mb-5 h-40 rounded-2xl bg-gradient-to-br from-sky-500 via-violet-500 to-fuchsia-500" style={{ backgroundImage: project.coverUrl ? `url(${project.coverUrl})` : undefined, backgroundSize: "cover" }} />
                 <h2 className="text-xl font-semibold text-slate-900">{project.name}</h2>

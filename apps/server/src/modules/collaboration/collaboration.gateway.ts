@@ -32,17 +32,17 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
   }
 
   @SubscribeMessage("join-room")
-  joinRoom(client: Socket, @MessageBody() fileId: string) {
+  joinRoom(client: Socket, @MessageBody() payload: { fileId: string; userName?: string; color?: string } | string) {
+    const fileId = typeof payload === "string" ? payload : payload.fileId;
+    const userName = typeof payload === "object" ? payload.userName : undefined;
+    const color = typeof payload === "object" ? payload.color : undefined;
     client.join(fileId);
     const users = this.roomUsers.get(fileId) ?? [];
-    const nextUsers = [
-      ...users,
-      {
-        id: client.id,
-        name: `User-${client.id.slice(0, 4)}`,
-        color: "#0EA5E9",
-      },
-    ];
+    const nextUsers = [...users.filter((item) => item.id !== client.id), {
+      id: client.id,
+      name: userName ?? `用户${client.id.slice(0, 4)}`,
+      color: color ?? "#0EA5E9",
+    }];
     this.roomUsers.set(fileId, nextUsers);
     this.server.to(fileId).emit("presence", { collaborators: nextUsers });
   }

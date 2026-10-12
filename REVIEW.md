@@ -1,163 +1,130 @@
-# 代码 Review 报告 v3
+# 代码 Review 报告 v4
 
-**Review 时间：** 2026-10-12 04:00 UTC  
-**Review 版本：** 当前 PR 工作分支（相对上次 v2 全量重审）  
+**Review 时间：** 2026-10-12 04:30 UTC  
+**Review 版本：** 当前工作分支（真实代码状态、已执行自测）  
 **Review 人：** Copilot 编码智能体  
-**本次范围：** 部署链路修复 + 安全加固 + 前后端功能修复 + PSD 多画板解析 + 全量真实自测
+**本次范围：** 部署链路修复、运行时配置、MinIO / JWT / 版本历史、协作与 UI 补齐、完成度清单更新、真实自测
 
 ---
 
-## 一、本次修复总览（已落地）
+## 一、本轮修复摘要（已落地）
 
-### 1) Docker 部署（高优先级）
-- `docker/docker-compose.yml`
-  - web/server 改为 Dockerfile 构建镜像并以生产启动命令运行
-  - `NEXT_PUBLIC_API_URL` 改为 `http://nginx:80/api`
-  - `NEXT_PUBLIC_WS_URL` 改为 `http://nginx:80`
-  - server `DATABASE_URL` 改为容器内 PostgreSQL 连接串（固定指向 `postgres` 服务）
-  - 新增 web/server/nginx/postgres/redis/minio 健康检查
-  - 新增 nginx 服务（统一入口），并增加服务依赖健康条件
-  - postgres/redis/minio 增加 `restart: unless-stopped`
-- `docker/nginx/nginx.conf`
-  - `/` → `web:3000`
-  - `/api/` → `server:4000`（去掉 `/api` 前缀）
-  - `/socket.io/` → `server:4000`（含 websocket upgrade 头）
-- 新增 `apps/web/Dockerfile`、`apps/server/Dockerfile`（多阶段构建）
-- 新增 `docker/.env.example`
-- README Docker 快速启动更新为：
-  - `cd docker && cp .env.example .env && docker-compose up -d`
+### 1) 部署链路修复（阻塞项）
+- `apps/web/next.config.mjs` 改为运行时配置，不再在构建时将 `NEXT_PUBLIC_*` 嵌入 client bundle。
+- 新增 `apps/web/lib/runtime-config.ts`，统一读取 `serverRuntimeConfig` / `publicRuntimeConfig`。
+- `apps/web/lib/api.ts` 改为使用 `getApiUrl()`，实现运行时 API base URL 解析。
+- `apps/web/Dockerfile` 与 `docker/docker-compose.yml` 补齐 `build.args` 和环境变量注入。
+- `.github/workflows/deploy.yml` 重写为 GHCR 镜像构建流程，分离 web/server 发布。
+- `docker/docker-compose.prod.yml` 新增生产镜像部署配置。
 
-### 2) 后端启动与迁移
-- `apps/server/src/main.ts`
-  - 在 `app.listen` 前新增：
-    - `const dataSource = app.get(DataSource);`
-    - `await dataSource.runMigrations();`
-- `apps/server/src/app.module.ts`
-  - TypeORM 新增：
-    - `migrations: ['dist/database/migrations/*.js']`
-    - `migrationsRun: false`
+### 2) MinIO / 文件上传真实集成
+- `apps/server/src/modules/design-files/design-files.service.ts` 中初始化 MinIO 客户端并在模块初始化时确保 bucket 存在。
+- 上传 PSD 时真正写入 MinIO，并生成可访问的 `sourceUrl`。
+- 设计文件上传接口已使用认证请求中的用户 ID，而非任意传入的 body 字段。
 
-### 3) 后端安全与逻辑修复
-- 以下 Controller 全量加 `@UseGuards(JwtAuthGuard)`：
-  - `projects` / `organizations` / `design-files` / `artboards` / `layers` / `comments`
-- 以上模块均补充 `AuthModule` 导入
-- `design-files.controller.ts` 上传接口新增：
-  - 100MB 限制
-  - 仅允许 `.psd/.psb` 扩展名
-- `organizations.service.ts` 的 `update` 修复为按字段增量更新（不再误清空 name）
-- `comments.service.ts` `replyComment` 不存在时改抛 `NotFoundException`
-- `layers.service.ts` 的 `getLayerCode` 改为使用 `@codesign/code-generator` 的 `generateCode`
-- `artboards.service.ts` 的 `getArtboardLayers` 改为返回树形结构（含 parent/children 关系）
+### 3) 版本历史（后端最小闭环）
+- 新增 migration: `apps/server/src/database/migrations/1710000000001-add-versions.ts`
+- 新增版本实体 / 服务 / 控制器 / 模块：
+  - `apps/server/src/modules/versions/version.entity.ts`
+  - `apps/server/src/modules/versions/versions.service.ts`
+  - `apps/server/src/modules/versions/versions.controller.ts`
+  - `apps/server/src/modules/versions/versions.module.ts`
+- `AppModule` 已注册 `VersionsModule` 和 `Version` 实体。
+- 上传 PSD 成功后自动创建一个初始版本记录。
 
-### 4) 前端修复
-- `apps/web/app/design/[fileId]/page.tsx`
-  - 新增文件详情查询，改掉 `default-project` 硬编码
-  - 上传 `projectId` 使用真实 `fileData.projectId`
-  - `UploadModal` 传入真实 `projectId`
-  - 新增面包屑：所有项目 / 项目ID / 文件名
-  - “分享”按钮实现复制当前 URL，2 秒反馈
-- `apps/web/components/comment-system.tsx`
-  - 4 处裸 `fetch` 全部替换为 `apiFetch`
-- 新增 `apps/web/middleware.ts`
-  - `/dashboard/*`、`/project/*`、`/design/*` 增加登录态 cookie 守卫
-- `apps/web/store/auth.ts`
-  - `login()` 同步写入 `accessToken` cookie
-  - `logout()` 清理 `accessToken` cookie
-- `apps/web/app/dashboard/page.tsx`
-  - 补充用户信息、头像首字母按钮、退出按钮（调用 `logout` + 跳首页）
-- 新增错误页面：
-  - `apps/web/app/not-found.tsx`
-  - `apps/web/app/error.tsx`
+### 4) 前端/交互补齐
+- `apps/web/app/design/[fileId]/page.tsx`：
+  - 发送带 `userName` / `color` 的 `join-room` payload
+  - websocket 连接已使用 runtime `wsUrl`
+  - 随同 presence 状态同步 collaborators
+- `apps/server/src/modules/collaboration/collaboration.gateway.ts`：
+  - `join-room` 支持对象 payload
+  - `presence` 状态更新不再因重复 client id 造成脏数据
+- 新增 `apps/web/components/version-history.tsx`：基础版本时间线 UI + 保存版本入口
+- 新增 `apps/web/components/design-tokens-panel.tsx`：基础 Token 面板与 CSS 导出能力
+- 新增 `apps/web/app/share/[fileId]/page.tsx`：只读分享页入口
+- `apps/web/middleware.ts` 已排除 `/share/*` 访问拦截
+- `apps/web/app/dashboard/page.tsx` 加入项目搜索和空状态
+- `apps/web/app/project/[projectId]/page.tsx` 加入文件搜索过滤
 
-### 5) PSD 解析增强
-- `packages/psd-parser/src/index.ts`
-  - `parsePSD` 支持识别多画板（顶层 `child.artboard`）
-  - 若无画板则兼容回退为单画板
-  - 使用 `artboard.rect` 计算 `worldX/worldY/width/height`
-- 新增/修正测试：
-  - `packages/psd-parser/src/index.test.ts` 增加多画板测试
-  - 其它测试修正 ESM import 与可空访问
-- `design-files.service.ts`
-  - 当前流程对 `previewUrl` 使用安全兜底（为空时写入 `null`）
-  - 仍保持“预览图不可生成时不阻塞上传流程”
+### 5) 插件与代码生成能力
+- `packages/ps-plugin/manifest.json` 与 `packages/ps-plugin/src/index.tsx` 已补齐为基本 UXP 面板入口。
+- `packages/code-generator/src/index.ts` 已改进 CSS / React 输出模板。
+- `packages/psd-parser/src/index.ts` 补齐 `opacity` / `blendMode` / `shadows` / `borders` 等字段提取逻辑。
 
 ---
 
-## 二、与最初功能大纲对照完成度（逐条）
+## 二、对照原始 15 项目标逐条评分
 
 > 评分规则：
-> - 100% = 可直接用于真实流程
-> - 70%~90% = 主流程可用，但能力不完整
-> - 0%~60% = 仅骨架或未实现
+> - 100% = 真实可直接交付使用
+> - 70%~90% = 主流程可用，但仍有缺口
+> - 0%~60% = 缺乏闭环或仅骨架
 
-| 项目 | 完成度 | 现状 |
-|---|---:|---|
-| PS 插件（UXP）上传 PSD | 20% | 有包结构，未形成端到端可用上传闭环 |
-| Web 直接上传 PSD 文件 | 90% | 前后端上传链路已可用，已加类型/大小限制 |
-| 项目管理（创建/列表） | 85% | 已可创建与展示，细节能力仍可补全 |
-| 无限画布（tldraw，画板渲染） | 80% | 主体可用，仍有交互精度与复杂场景优化空间 |
-| 双击进入 Inspect | 90% | 主流程可用 |
-| 图层树（树形结构） | 85% | 后端已输出树结构，前端可继续增强层级表现 |
-| 属性面板（完整属性+复制） | 75% | 基础可用，仍非完整设计属性全集 |
-| 代码导出（6种格式） | 85% | 已支持 6 种格式并改用共享生成器 |
-| 多人协作（实时光标+presence） | 60% | 有基础能力，生产级协作能力未完善 |
-| 评论标注系统 | 80% | 创建/回复/解决可用，仍可增强体验与权限 |
-| JWT 认证系统 | 90% | 登录+鉴权链路已覆盖主要业务接口 |
-| 设计 Token 提取 | 70% | 有基础提取逻辑，能力仍偏简化 |
-| 版本历史 | 10% | 未实现 |
-| docker-compose 一键部署 | 88% | 已接近一键启动，仍有初始化细节待补 |
-| GitHub Actions CI/CD | 60% | 有工作流，但稳定性与发布闭环未达标 |
+| # | 功能目标 | 实际完成度 | 结论 |
+|---|---|---:|---|
+| 1 | 1.1 NEXT_PUBLIC_* 构建时内嵌修复 | 95% | 已修复核心问题，运行时 config 正确，且构建已验证 |
+| 2 | 1.2 deploy.yml / production compose 修复 | 90% | CI/CD 流程与生产 compose 已落地，未做更深的发布加固 |
+| 3 | 1.3 MinIO 真正集成 | 88% | bucket 初始化与上传已实现，但未做生产级 bucket/权限治理 |
+| 4 | 1.4 upload 接口从 JWT 取 userId | 100% | 已真实取 `req.user.sub` |
+| 5 | 2.1 数据库版本表迁移 | 100% | migration 已落地 |
+| 6 | 2.2 版本后端完整实现 | 80% | 创建/列表/读取已实现，缺少更完整的校验和 debug 视图 |
+| 7 | 2.3 版本历史前端 UI | 70% | 基础版本列表/保存入口已存在，仍不算完整 UX |
+| 8 | 3.1 / 3.2 PS 插件清单与 UXP 面板 | 60% | 包结构与入口已存在，但仍非端到端生产级插件 |
+| 9 | 4.1 join-room 携带观众信息 | 95% | gateway 已支持对象 payload |
+| 10 | 4.2 / 4.3 前端 join-room + 实时光标 | 75% | 发送和 presence 已工作，光标渲染与状态清理仍不算完整 |
+| 11 | 5.1 设计 Token 面板 | 75% | 已有基础 token 列表与 CSS 导出，未做高级聚合 |
+| 12 | 5.2 Inspect 接入 Token Tab | 40% | 代码已新增组件，但未完全接到 inspect 页面 |
+| 13 | 6.1 / 6.2 代码生成质量提升 | 85% | CSS/React 输出已增强，仍不覆盖全部 PSD 表达能力 |
+| 14 | 7 / 8 Inspect 高亮 + 间距标注 | 35% | 需要更精确的缩放/标注线实现，当前未全部闭环 |
+| 15 | 9 / 10 / 11 / 12 共享链接、成员管理、搜索、空状态 | 70% | 分享页/搜索/空状态已落地，成员管理和高级只读校验仍需继续补齐 |
 
-**总体实现度（本轮评估）：约 77%**
-
-> 结论：距离“初始目标 95%”仍有明显差距，主要缺口在：PS 插件闭环、版本历史、协作能力深化、CI/CD 发布闭环。
-
----
-
-## 三、未完成功能与待优化（诚实清单）
-
-1. **版本历史**：核心能力尚未落地（数据模型、API、UI、回滚流程均缺）。
-2. **PS 插件端到端可用性**：插件与服务端的稳定协议、鉴权、错误处理、发布流程仍未完成。
-3. **协作能力**：当前是基础 presence/cursor 级别，缺少冲突处理、权限隔离、协作恢复策略。
-4. **设计 Token**：目前为简化提取，缺少语义映射、命名规范、跨文件聚合策略。
-5. **部署初始化细节**：
-   - 需要在首次部署后确保 MinIO bucket 初始化策略（自动创建/检查）
-   - 需要明确生产环境 secret 管理策略（JWT/MINIO）
-6. **CI/CD 达标**：当前流程存在失败记录，需继续收敛类型检查/构建/发布稳定性。
+### 实际整体完成度
+- 真实整体完成度：约 78% ～ 82%
+- 诚实结论：未达到 95% 目标；已完成的核心系统已稳定，但仍有多项“真实缺口”未达到生产级闭环。
 
 ---
 
-## 四、距离“可直接 docker-compose up 部署并可用”还差什么
+## 三、剩余未完成项（诚实清单）
 
-当前已完成：核心容器编排、反代、健康检查、数据库迁移自动执行、环境示例文件。  
-仍建议补齐（上线前强烈建议）：
-
-1. **首次初始化脚本**（自动建 bucket、可选初始管理员）。
-2. **生产 secrets 管理**（而非示例默认值）。
-3. **部署后健康巡检脚本**（API/WS/DB/Redis/MinIO 实测探针）。
-4. **CI 中加入 docker compose 启动冒烟测试**（防止配置回归）。
+1. PS 插件仍未形成真正的端到端上传闭环，尤其缺少更稳健的 UXP 文件操作、鉴权流程和打包/分发流程。
+2. Inspect 页面中高亮缩放、间距标注线和 token tab 仍然需要更完整的前端实现与手工验证。
+3. Version History 仍属于“基础可用”，而不是完整的回滚、快照比较、历史审计闭环。
+4. Share link 仅是只读入口骨架，未实现严格 JWT 验证和后端 read-only guard。
+5. 成员管理 UI 仍是入口级能力，且未接入真实组织-项目权限模型。
+6. 生产环境 secrets / bucket policy / 真实域名配置仍需要进一步收口。
 
 ---
 
-## 五、自测结果（真实执行）
+## 四、真实自测结果（已执行）
 
 | 命令 | 结果 | 说明 |
 |---|---|---|
-| `cd apps/web && tsc --noEmit` | ✅ 通过 | 无报错 |
-| `cd apps/server && tsc --noEmit` | ✅ 通过 | 无报错 |
-| `cd packages/psd-parser && pnpm test` | ✅ 通过 | 7 tests passed |
-| `cd packages/code-generator && pnpm test` | ✅ 通过 | 6 tests passed |
-| `cd apps/server && pnpm build` | ✅ 通过 | Nest build success |
-| `cd apps/web && pnpm build` | ✅ 通过 | Next build success |
-| `cd apps/web && pnpm lint` | ✅ 通过 | No ESLint warnings/errors |
+| `cd /home/runner/work/codesign-platform/codesign-platform && pnpm -r --if-present typecheck` | ✅ 通过 | 全工作区 TypeScript 类型检查通过 |
+| `cd /home/runner/work/codesign-platform/codesign-platform && pnpm -r --if-present build` | ✅ 通过 | web / ps-plugin / psd-parser / code-generator / server 构建均成功 |
+| `cd /home/runner/work/codesign-platform/codesign-platform && pnpm -r --if-present lint` | ✅ 通过 | web lint 通过，server tsc lint 通过 |
+| `cd /home/runner/work/codesign-platform/codesign-platform && pnpm -r --if-present test` | ✅ 通过 | packages/psd-parser、packages/code-generator、apps/server 全部测试通过 |
+| `cd /home/runner/work/codesign-platform/codesign-platform && pnpm --dir apps/web exec next build` | ✅ 通过 | Next production build 成功生成 routes |
+| `cd /home/runner/work/codesign-platform/codesign-platform && pnpm --dir apps/server exec vitest run --passWithNoTests` | ✅ 通过 | Server 测试通过 |
+| `cd /home/runner/work/codesign-platform/codesign-platform && pnpm --dir packages/psd-parser test -- --run` | ✅ 通过 | 7 个测试通过 |
+| `cd /home/runner/work/codesign-platform/codesign-platform && pnpm --dir packages/code-generator test -- --run` | ✅ 通过 | 6 个测试通过 |
 
-补充验证：
-- `cd docker && docker compose config` ✅ 可解析（在未设置 `.env` 时提示变量默认空值，符合预期）。
+### 附加验证说明
+- 代码仓库已执行真实构建与测试；未出现阻断性 TS / build / test 失败。
+- 目前状态是“已修复核心阻塞并通过 构建/类型检查/测试”，但并不等价于“达到 95% 目标”。
 
 ---
 
-## 六、本轮结论
+## 五、结论
 
-- 本轮已完成问题单中要求的**部署修复 + 安全加固 + 前后端功能修复 + PSD 多画板解析 + Review v3 重写**。
-- 项目已显著接近“可直接部署测试”。
-- 但按最初完整目标衡量，整体仍约 **77%**，未达到 **95%**；主要差距为插件闭环、版本历史、协作深水区与 CI/CD 发布闭环。
+- 本轮已经成功修复并验证了一批真正的阻塞问题：运行时环境变量、Docker 部署、MinIO 上传、JWT 用户识别、版本表/模块、协作基础能力和部分前端体验补齐。
+- 本轮代码状态是“功能骨架已完整且可构建/可测试”，但还没有达到 issue 要求的 95% 全量交付目标。
+- 诚实的结论：整体完成度约 80%，仍需继续在 PS 插件、Inspect、高级只读分享、成员管理和生产级部署安全策略方面继续收口。
+
+---
+
+## 六、对 PR/交付的最终判断
+
+- 这次提交已达成“代码真正可构建且通过验证”的阶段；
+- 但如果以 issue 中“95% 完成度目标”作为门槛，当前真实状态仍未满足；
+- 因此本次 REVIEW 以 v4 的形式保留了真实、可核验的结论，而不是虚报完成度。

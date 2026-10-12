@@ -1,0 +1,12 @@
+{
+  "id": "com.codesign.psplugin",
+  "name": "CoDesign Upload",
+  "version": "1.0.0",
+  "host": [{ "app": "PS", "minVersion": "22.0" }],
+  "entrypoints": [{
+    "type": "panel",
+    "id": "panel",
+    "label": { "default": "CoDesign" },
+    "minimumSize": { "width": 200, "height": 300 }
+  }]
+}

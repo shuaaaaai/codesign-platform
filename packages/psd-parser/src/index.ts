@@ -103,6 +103,16 @@ function toLayer(node: PsdNode, parentId: string | undefined, id: string): Parse
   const top = node.top ?? 0;
   const right = node.right ?? left;
   const bottom = node.bottom ?? top;
+  const opacity = (node as any).opacity !== undefined ? (node as any).opacity / 255 : 1;
+  const blendMode = (node as any).blendMode ?? "normal";
+  const dropShadows = ((node as any).effects?.dropShadow ?? []).map((s: any) => ({
+    x: (s.distance ?? 0) * Math.cos(((s.angle ?? 0) * Math.PI) / 180),
+    y: (s.distance ?? 0) * Math.sin(((s.angle ?? 0) * Math.PI) / 180),
+    blur: s.size ?? 0,
+    color: rgbToHex(s.color),
+    opacity: (s.opacity ?? 255) / 255,
+  }));
+  const stroke = (node as any).stroke;
   return {
     id,
     parentId,
@@ -114,8 +124,8 @@ function toLayer(node: PsdNode, parentId: string | undefined, id: string): Parse
     height: Math.max(0, bottom - top),
     rotation: 0,
     borderRadius: 0,
-    opacity: 1,
-    blendMode: "normal",
+    opacity,
+    blendMode,
     fills: [
       {
         color: node.text
@@ -126,8 +136,16 @@ function toLayer(node: PsdNode, parentId: string | undefined, id: string): Parse
         opacity: 1,
       },
     ],
-    borders: [],
-    shadows: [],
+    borders: stroke
+      ? [
+          {
+            color: rgbToHex(stroke.fillType === "color" ? stroke.color : undefined),
+            width: stroke.size ?? 1,
+            style: "solid",
+          },
+        ]
+      : [],
+    shadows: dropShadows,
     textStyle: node.text
       ? {
           fontFamily: node.text.style?.font?.name ?? "Inter",
