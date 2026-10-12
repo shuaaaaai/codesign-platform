@@ -5,10 +5,15 @@
     "moduleResolution": "NodeNext",
     "declaration": true,
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": ".",
+    "rootDirs": ["./src", "../psd-parser/src"],
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@codesign/psd-parser": ["../psd-parser/src/index.ts"]
+    }
   },
   "include": ["src/**/*.ts"]
 }

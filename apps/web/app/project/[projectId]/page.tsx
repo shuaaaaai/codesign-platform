@@ -26,6 +26,7 @@ export default function ProjectDetailPage() {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: files = [], isLoading } = useQuery({
     queryKey: ["design-files", projectId],
@@ -59,6 +60,8 @@ export default function ProjectDetailPage() {
     uploadMutation.mutate(file);
   };
 
+  const filteredFiles = (files ?? []).filter((file) => file.name.toLowerCase().includes(searchQuery.trim().toLowerCase()));
+
   return (
     <main className="min-h-screen bg-slate-100 p-6">
       <div className="mx-auto max-w-6xl">
@@ -75,6 +78,15 @@ export default function ProjectDetailPage() {
           >
             {isUploading ? "上传中..." : "Upload PSD"}
           </button>
+        </div>
+
+        <div className="mb-5">
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="搜索文件"
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-0 placeholder:text-slate-400 focus:border-slate-300"
+          />
         </div>
 
         <input
@@ -105,7 +117,7 @@ export default function ProjectDetailPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {files.map((file) => (
+            {filteredFiles.map((file) => (
               <Link
                 key={file.id}
                 href={`/design/${file.id}`}

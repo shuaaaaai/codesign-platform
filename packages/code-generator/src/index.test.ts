@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateCode } from "./index";
+import { generateCode } from "./index.js";
 
 const layer = {
   id: "1",

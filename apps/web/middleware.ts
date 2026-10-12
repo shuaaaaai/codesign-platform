@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/", "/api"];
+const PUBLIC_PATHS = ["/", "/api", "/share"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_PATHS.some((path) => {
     if (path === "/") {
       return pathname === "/";
+    }
+    if (path === "/share") {
+      return pathname === "/share" || pathname.startsWith("/share/");
     }
     return pathname === path || pathname.startsWith(`${path}/`);
   });
@@ -23,5 +26,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/project/:path*", "/design/:path*"],
+  matcher: ["/dashboard/:path*", "/project/:path*", "/design/:path*", "/share/:path*"],
 };
