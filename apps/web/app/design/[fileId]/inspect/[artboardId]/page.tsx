@@ -87,7 +87,7 @@ export default function InspectPage() {
                   />
                 ))}
 
-                <CommentSystem artboardId={artboardId} apiBaseUrl={API_BASE_URL} />
+                <CommentSystem artboardId={artboardId} />
               </>
             )}
           </div>

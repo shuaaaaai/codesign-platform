@@ -8,9 +8,10 @@ import { DesignFilesService } from "./design-files.service";
 import { Artboard } from "../artboards/artboard.entity";
 import { LayerNode } from "../layers/layer-node.entity";
 import { CollaborationModule } from "../collaboration/collaboration.module";
+import { AuthModule } from "../auth/auth.module";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([DesignFile, Asset, DesignToken, Artboard, LayerNode]), CollaborationModule],
+  imports: [TypeOrmModule.forFeature([DesignFile, Asset, DesignToken, Artboard, LayerNode]), CollaborationModule, AuthModule],
   controllers: [DesignFilesController],
   providers: [DesignFilesService],
   exports: [DesignFilesService],

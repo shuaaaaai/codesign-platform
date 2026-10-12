@@ -10,7 +10,7 @@ describe("psd parser", () => {
 
   it("exposes parsed layers with coordinates", async () => {
     const result = await parsePSD(Buffer.from("PSD"));
-    const layer = result[0]?.children[1];
+    const layer = result[0]?.children?.[1];
     expect(layer?.name).toBe("Hero Button");
     expect(layer?.x).toBe(320);
     expect(layer?.width).toBeGreaterThan(0);

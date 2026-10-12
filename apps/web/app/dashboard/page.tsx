@@ -2,8 +2,10 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useAuthStore } from "@/store/auth";
 
 interface Project {
   id: string;
@@ -16,9 +18,12 @@ interface Project {
 
 export default function DashboardPage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["projects"],
@@ -48,7 +53,20 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold text-slate-900">项目列表</h1>
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-slate-300" />
+            <span className="text-sm text-slate-600">{user?.name ?? user?.email}</span>
+            <button className="h-9 w-9 rounded-full bg-sky-500 text-white font-bold" title={user?.email} type="button">
+              {user?.name?.slice(0, 1)?.toUpperCase() ?? "U"}
+            </button>
+            <button
+              className="text-sm text-slate-500 hover:text-slate-900"
+              onClick={() => {
+                logout();
+                router.push("/");
+              }}
+              type="button"
+            >
+              退出
+            </button>
             <button className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white" type="button" onClick={() => setOpen(true)}>
               新建项目
             </button>

@@ -21,7 +21,16 @@ export class ArtboardsService {
 
   async getArtboardLayers(id: string) {
     const layers = await this.layerRepository.find({ where: { artboardId: id } });
-    return { artboardId: id, layers };
+    const layerMap = new Map(layers.map((layer) => [layer.id, { ...layer, children: [] as LayerNode[] }]));
+    const roots: Array<LayerNode & { children: LayerNode[] }> = [];
+    for (const layer of layerMap.values()) {
+      if (layer.parentId && layerMap.has(layer.parentId)) {
+        layerMap.get(layer.parentId)!.children.push(layer);
+      } else {
+        roots.push(layer);
+      }
+    }
+    return { artboardId: id, layers: roots };
   }
 
   async getArtboardPreview(id: string) {

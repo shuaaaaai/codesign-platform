@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { io, type Socket } from "socket.io-client";
@@ -16,6 +17,7 @@ export default function DesignPage() {
   const queryClient = useQueryClient();
   const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:4000";
   const [openUpload, setOpenUpload] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const setArtboards = useCanvasStore((state) => state.setArtboards);
   const setCollaborators = useCanvasStore((state) => state.setCollaborators);
@@ -26,6 +28,11 @@ export default function DesignPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["artboards", fileId],
     queryFn: () => apiFetch<{ artboards: Artboard[] }>(`/design-files/${fileId}/artboards`),
+  });
+
+  const { data: fileData } = useQuery({
+    queryKey: ["design-file", fileId],
+    queryFn: () => apiFetch<{ id: string; projectId: string; name: string }>(`/design-files/${fileId}`),
   });
 
   useEffect(() => {
@@ -50,7 +57,7 @@ export default function DesignPage() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("projectId", "default-project");
+      formData.append("projectId", fileData?.projectId ?? "");
       return apiFetch<{ fileId: string }>("/design-files/upload", {
         method: "POST",
         body: formData,
@@ -66,7 +73,13 @@ export default function DesignPage() {
       <div className="mx-auto max-w-7xl">
         <header className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div>
-            <p className="text-sm text-slate-500">项目 / 文件 {fileId}</p>
+            <p className="text-sm text-slate-500">
+              <Link href="/dashboard">所有项目</Link>
+              {" / "}
+              <Link href={`/project/${fileData?.projectId}`}>{fileData?.projectId}</Link>
+              {" / "}
+              {fileData?.name ?? fileId}
+            </p>
             <h1 className="text-2xl font-bold text-slate-900">无限画布工作区</h1>
           </div>
           <div className="flex items-center gap-2">
@@ -79,8 +92,16 @@ export default function DesignPage() {
             <button className="rounded-xl border border-slate-200 px-4 py-2 text-sm" type="button" onClick={() => setOpenUpload(true)}>
               上传
             </button>
-            <button className="rounded-xl bg-slate-900 px-4 py-2 text-sm text-white" type="button">
-              分享
+            <button
+              className="rounded-xl bg-slate-900 px-4 py-2 text-sm text-white"
+              type="button"
+              onClick={async () => {
+                await navigator.clipboard.writeText(window.location.href);
+                setShareCopied(true);
+                setTimeout(() => setShareCopied(false), 2000);
+              }}
+            >
+              {shareCopied ? "✓ 已复制" : "分享"}
             </button>
           </div>
         </header>
@@ -106,7 +127,7 @@ export default function DesignPage() {
       </div>
 
       <UploadModal
-        projectId="default-project"
+        projectId={fileData?.projectId ?? ""}
         apiBaseUrl={API_BASE_URL}
         wsUrl={wsUrl}
         open={openUpload}

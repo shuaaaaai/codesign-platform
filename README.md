@@ -51,7 +51,7 @@ CodeSign Platform 是一个面向设计协作与代码导出的开源平台，�
 ## Docker 部署
 
 ```bash
-docker compose -f docker/docker-compose.yml up --build
+cd docker && cp .env.example .env && docker-compose up -d
 ```
 
 ## 环境变量说明

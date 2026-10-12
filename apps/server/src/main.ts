@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
+import { DataSource } from "typeorm";
 
 export function normalizePort(port?: string): number {
   const value = Number(port ?? "4000");
@@ -15,6 +16,8 @@ export async function bootstrap() {
     credentials: true,
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  const dataSource = app.get(DataSource);
+  await dataSource.runMigrations();
   await app.listen(normalizePort(process.env.APP_PORT));
   return app;
 }

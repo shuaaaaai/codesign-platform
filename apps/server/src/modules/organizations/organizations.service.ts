@@ -28,8 +28,12 @@ export class OrganizationsService {
     return organization;
   }
 
-  async update(id: string, body: { name?: string }) {
-    await this.orgRepository.update({ id }, { name: body.name ?? "" });
+  async update(id: string, body: { name?: string; description?: string }) {
+    const updates: Partial<Organization> = {};
+    if (body.name !== undefined) {
+      updates.name = body.name;
+    }
+    await this.orgRepository.update({ id }, updates);
     return this.get(id);
   }
 
