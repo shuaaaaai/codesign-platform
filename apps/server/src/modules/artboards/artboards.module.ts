@@ -4,9 +4,10 @@ import { Artboard } from "./artboard.entity";
 import { ArtboardsController } from "./artboards.controller";
 import { ArtboardsService } from "./artboards.service";
 import { LayerNode } from "../layers/layer-node.entity";
+import { AuthModule } from "../auth/auth.module";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Artboard, LayerNode])],
+  imports: [TypeOrmModule.forFeature([Artboard, LayerNode]), AuthModule],
   controllers: [ArtboardsController],
   providers: [ArtboardsService],
 })

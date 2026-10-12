@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Comment } from "./comment.entity";
@@ -45,7 +45,7 @@ export class CommentsService {
   async replyComment(id: string, content: string) {
     const parent = await this.commentRepository.findOne({ where: { id } });
     if (!parent) {
-      throw new Error("评论不存在");
+      throw new NotFoundException("评论不存在");
     }
 
     const reply = this.commentRepository.create({

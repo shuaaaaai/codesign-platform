@@ -24,5 +24,5 @@ export class Artboard {
   height!: number;
 
   @Column({ type: "varchar", nullable: true })
-  previewUrl?: string;
+  previewUrl?: string | null;
 }

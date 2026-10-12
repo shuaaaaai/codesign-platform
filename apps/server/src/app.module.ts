@@ -31,6 +31,8 @@ import { TeamMember } from "./modules/organizations/team-member.entity";
         url: config.get<string>("DATABASE_URL") ?? "postgresql://localhost:5432/codesign",
         entities: [Organization, TeamMember, User, Project, DesignFile, Artboard, LayerNode, Comment, DesignToken, Asset],
         synchronize: false,
+        migrations: ["dist/database/migrations/*.js"],
+        migrationsRun: false,
         logging: false,
       }),
     }),

@@ -1,9 +1,11 @@
-import { Controller, Get, Param, Query } from "@nestjs/common";
+import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
 import { LayersService } from "./layers.service";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
 type CodeFormat = "css" | "tailwind" | "react" | "vue" | "ios" | "android";
 
 @Controller("layers")
+@UseGuards(JwtAuthGuard)
 export class LayersController {
   constructor(private readonly service: LayersService) {}
 

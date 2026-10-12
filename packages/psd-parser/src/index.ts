@@ -55,6 +55,14 @@ type PsdNode = {
   solidColor?: { r?: number; g?: number; b?: number };
   fillColor?: { r?: number; g?: number; b?: number };
   children?: PsdNode[];
+  artboard?: {
+    rect?: {
+      top?: number;
+      left?: number;
+      bottom?: number;
+      right?: number;
+    };
+  };
   text?: {
     text?: string;
     style?: {
@@ -161,7 +169,11 @@ export async function parsePSD(buffer: Buffer): Promise<ParsedArtboard[]> {
 
   let psd: (PsdNode & { children?: PsdNode[]; width?: number; height?: number }) | null = null;
   try {
-    psd = readPsd(buffer) as PsdNode & { children?: PsdNode[]; width?: number; height?: number };
+    psd = readPsd(buffer as unknown as Parameters<typeof readPsd>[0]) as PsdNode & {
+      children?: PsdNode[];
+      width?: number;
+      height?: number;
+    };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "unknown parse error";
     console.warn(`[psd-parser] readPsd failed, using fallback output: ${errorMessage}`);
@@ -215,7 +227,27 @@ export async function parsePSD(buffer: Buffer): Promise<ParsedArtboard[]> {
       },
     ];
   }
-  const layers = flattenLayers(psd.children);
+  const artboardLayers = psd.children?.filter((child) => child.artboard) ?? [];
+
+  if (artboardLayers.length > 0) {
+    return artboardLayers.map((artboardLayer, index) => {
+      const rect = artboardLayer.artboard?.rect;
+      const left = rect?.left ?? index * 1600;
+      const top = rect?.top ?? 0;
+      const right = rect?.right ?? left + (psd.width ?? 1440);
+      const bottom = rect?.bottom ?? top + (psd.height ?? 1024);
+      return {
+        id: `artboard-${index + 1}`,
+        name: artboardLayer.name ?? `Artboard ${index + 1}`,
+        width: right - left,
+        height: bottom - top,
+        worldX: left,
+        worldY: top,
+        previewUrl: undefined,
+        layers: flattenLayers(artboardLayer.children),
+      };
+    });
+  }
 
   return [
     {
@@ -226,7 +258,7 @@ export async function parsePSD(buffer: Buffer): Promise<ParsedArtboard[]> {
       worldX: 0,
       worldY: 0,
       previewUrl: undefined,
-      layers,
+      layers: flattenLayers(psd.children),
     },
   ];
 }

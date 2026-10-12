@@ -87,6 +87,7 @@ export class DesignFilesService implements OnModuleDestroy {
       this.collaborationGateway.emitParseProgress(saved.id, 85, "写入数据库");
 
       for (const artboardData of parsedArtboards) {
+        const previewUrl = artboardData.previewUrl ?? null;
         const artboard = await this.artboardRepository.save(
           this.artboardRepository.create({
             designFileId: saved.id,
@@ -95,7 +96,7 @@ export class DesignFilesService implements OnModuleDestroy {
             height: artboardData.height,
             worldX: artboardData.worldX,
             worldY: artboardData.worldY,
-            previewUrl: artboardData.previewUrl,
+            previewUrl,
           }),
         );
 

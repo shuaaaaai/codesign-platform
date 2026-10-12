@@ -2,14 +2,14 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { apiFetch } from "@/lib/api";
 import type { CommentItem } from "@/types/design";
 
 interface CommentSystemProps {
   artboardId: string;
-  apiBaseUrl: string;
 }
 
-export function CommentSystem({ artboardId, apiBaseUrl }: CommentSystemProps) {
+export function CommentSystem({ artboardId }: CommentSystemProps) {
   const [newContent, setNewContent] = useState("");
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
   const [openedCommentId, setOpenedCommentId] = useState<string | null>(null);
@@ -18,9 +18,7 @@ export function CommentSystem({ artboardId, apiBaseUrl }: CommentSystemProps) {
 
   const { data: comments = [] } = useQuery({
     queryKey: ["comments", artboardId],
-    queryFn: async () => {
-      return (await fetch(`${apiBaseUrl}/comments?artboardId=${artboardId}`, { cache: "no-store" })).json() as Promise<CommentItem[]>;
-    },
+    queryFn: () => apiFetch<CommentItem[]>(`/comments?artboardId=${artboardId}`),
   });
 
   const createMutation = useMutation({
@@ -28,14 +26,10 @@ export function CommentSystem({ artboardId, apiBaseUrl }: CommentSystemProps) {
       if (!anchor || !newContent.trim()) {
         return;
       }
-      const response = await fetch(`${apiBaseUrl}/comments`, {
+      await apiFetch<CommentItem>("/comments", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ artboardId, content: newContent, x: anchor.x, y: anchor.y }),
       });
-      if (!response.ok) {
-        throw new Error("评论创建失败");
-      }
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["comments", artboardId] });
@@ -46,10 +40,7 @@ export function CommentSystem({ artboardId, apiBaseUrl }: CommentSystemProps) {
 
   const resolveMutation = useMutation({
     mutationFn: async (commentId: string) => {
-      const response = await fetch(`${apiBaseUrl}/comments/${commentId}/resolve`, { method: "PATCH" });
-      if (!response.ok) {
-        throw new Error("评论更新失败");
-      }
+      await apiFetch<CommentItem>(`/comments/${commentId}/resolve`, { method: "PATCH" });
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["comments", artboardId] });
@@ -58,14 +49,10 @@ export function CommentSystem({ artboardId, apiBaseUrl }: CommentSystemProps) {
 
   const replyMutation = useMutation({
     mutationFn: async ({ commentId, content }: { commentId: string; content: string }) => {
-      const response = await fetch(`${apiBaseUrl}/comments/${commentId}/reply`, {
+      await apiFetch<CommentItem>(`/comments/${commentId}/reply`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content }),
       });
-      if (!response.ok) {
-        throw new Error("回复失败");
-      }
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["comments", artboardId] });
