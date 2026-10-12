@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { DesignFilesService } from "./design-files.service";
+import { UploadDesignFileDto } from "./dto/upload-design-file.dto";
 
 interface UploadedDesignFile {
   originalname: string;
@@ -11,15 +12,30 @@ interface UploadedDesignFile {
 export class DesignFilesController {
   constructor(private readonly service: DesignFilesService) {}
 
+  @Get()
+  list(@Query("projectId") projectId: string) {
+    return this.service.listByProject(projectId);
+  }
+
   @Post("upload")
   @UseInterceptors(FileInterceptor("file"))
-  upload(@UploadedFile() file: UploadedDesignFile, @Body("projectId") projectId: string, @Body("userId") userId?: string) {
-    return this.service.uploadFile(file, projectId, userId ?? "anonymous-user");
+  upload(@UploadedFile() file: UploadedDesignFile, @Body() dto: UploadDesignFileDto) {
+    return this.service.uploadFile(file, dto.projectId, dto.userId ?? "anonymous-user");
   }
 
   @Get(":id")
   get(@Param("id") id: string) {
     return this.service.getFile(id);
+  }
+
+  @Patch(":id")
+  rename(@Param("id") id: string, @Body("name") name: string) {
+    return this.service.renameFile(id, name);
+  }
+
+  @Delete(":id")
+  remove(@Param("id") id: string) {
+    return this.service.deleteFile(id);
   }
 
   @Get(":id/artboards")

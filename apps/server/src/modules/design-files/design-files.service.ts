@@ -40,6 +40,24 @@ export class DesignFilesService implements OnModuleDestroy {
     await this.queue.close();
   }
 
+  async listByProject(projectId: string) {
+    if (!projectId) {
+      return [];
+    }
+    const files = await this.fileRepository.find({
+      where: { projectId },
+      order: { createdAt: "DESC" },
+    });
+    return files.map((file) => ({
+      id: file.id,
+      name: file.name,
+      status: file.status,
+      createdAt: file.createdAt,
+      updatedAt: file.updatedAt,
+      previewUrl: file.previewUrl,
+    }));
+  }
+
   async uploadFile(file: UploadedDesignFile, projectId: string, userId: string) {
     if (!file) {
       throw new NotFoundException("上传文件不存在");
@@ -159,6 +177,22 @@ export class DesignFilesService implements OnModuleDestroy {
       throw new NotFoundException("设计文件不存在");
     }
     return file;
+  }
+
+  async renameFile(id: string, name: string) {
+    const file = await this.getFile(id);
+    const nextName = name?.trim();
+    if (!nextName) {
+      throw new NotFoundException("文件名不能为空");
+    }
+    file.name = nextName;
+    return this.fileRepository.save(file);
+  }
+
+  async deleteFile(id: string) {
+    const file = await this.getFile(id);
+    await this.fileRepository.delete({ id: file.id });
+    return { id: file.id, deleted: true };
   }
 
   async getArtboards(fileId: string) {

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef } from "react";
 import { Tldraw, createShapeId, type Editor } from "@tldraw/tldraw";
 import "@tldraw/tldraw/tldraw.css";
@@ -74,11 +75,8 @@ export function InfiniteCanvas({ artboards, collaborators, onArtboardDoubleClick
     () =>
       collaborators.map((member) => (
         <div key={member.id} className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1">
-          <div
-            className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold text-white"
-            style={{ backgroundColor: member.color }}
-          >
-            {member.avatar ? <img src={member.avatar} alt={member.name} className="h-7 w-7 rounded-full" /> : member.name.slice(0, 1).toUpperCase()}
+          <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full text-xs font-semibold text-white" style={{ backgroundColor: member.color }}>
+            {member.avatar ? <Image src={member.avatar} alt={member.name} width={28} height={28} className="h-7 w-7 rounded-full object-cover" /> : member.name.slice(0, 1).toUpperCase()}
           </div>
           <span className="text-xs text-slate-600">{member.name}</span>
         </div>

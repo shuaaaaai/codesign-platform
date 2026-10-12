@@ -3,7 +3,8 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const isFormDataBody = typeof FormData !== "undefined" && init?.body instanceof FormData;
   const headers = new Headers(init?.headers);
-  const authToken = typeof window !== "undefined" ? localStorage.getItem("codesign_access_token") : null;
+  const authToken =
+    typeof window !== "undefined" ? localStorage.getItem("accessToken") ?? localStorage.getItem("codesign_access_token") : null;
   if (!isFormDataBody && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }

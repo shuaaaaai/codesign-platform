@@ -28,8 +28,8 @@ export class OrganizationsService {
     return organization;
   }
 
-  async update(id: string, body: { name: string }) {
-    await this.orgRepository.update({ id }, { name: body.name });
+  async update(id: string, body: { name?: string }) {
+    await this.orgRepository.update({ id }, { name: body.name ?? "" });
     return this.get(id);
   }
 

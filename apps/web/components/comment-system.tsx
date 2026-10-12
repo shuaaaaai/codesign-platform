@@ -13,16 +13,13 @@ export function CommentSystem({ artboardId, apiBaseUrl }: CommentSystemProps) {
   const [newContent, setNewContent] = useState("");
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
   const [openedCommentId, setOpenedCommentId] = useState<string | null>(null);
+  const [replyDraft, setReplyDraft] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
 
   const { data: comments = [] } = useQuery({
     queryKey: ["comments", artboardId],
     queryFn: async () => {
-      const response = await fetch(`${apiBaseUrl}/comments?artboardId=${artboardId}`, { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error("评论加载失败");
-      }
-      return (await response.json()) as CommentItem[];
+      return (await fetch(`${apiBaseUrl}/comments?artboardId=${artboardId}`, { cache: "no-store" })).json() as Promise<CommentItem[]>;
     },
   });
 
@@ -72,6 +69,7 @@ export function CommentSystem({ artboardId, apiBaseUrl }: CommentSystemProps) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["comments", artboardId] });
+      setReplyDraft((current) => ({ ...current, [replyMutation.variables?.commentId ?? ""]: "" }));
     },
   });
 
@@ -79,10 +77,14 @@ export function CommentSystem({ artboardId, apiBaseUrl }: CommentSystemProps) {
     <div className="relative h-full w-full" onClick={(event) => setAnchor({ x: event.nativeEvent.offsetX, y: event.nativeEvent.offsetY })}>
       {comments.map((comment) => (
         <div key={comment.id} className="absolute" style={{ left: comment.x, top: comment.y }}>
-          <button className="text-xl" type="button" onClick={(event) => {
-            event.stopPropagation();
-            setOpenedCommentId((prev) => (prev === comment.id ? null : comment.id));
-          }}>
+          <button
+            className="text-xl"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              setOpenedCommentId((prev) => (prev === comment.id ? null : comment.id));
+            }}
+          >
             💬
           </button>
           {openedCommentId === comment.id && (
@@ -93,18 +95,36 @@ export function CommentSystem({ artboardId, apiBaseUrl }: CommentSystemProps) {
                   <p key={reply.id} className="rounded bg-slate-50 p-1 text-xs text-slate-600">{reply.content}</p>
                 ))}
               </div>
-              <div className="mt-2 flex gap-2">
-                <button className="rounded bg-slate-900 px-2 py-1 text-xs text-white" type="button" onClick={() => {
-                  const content = window.prompt("输入回复内容");
-                  if (content) {
-                    replyMutation.mutate({ commentId: comment.id, content });
+              <div className="mt-2 space-y-2">
+                <textarea
+                  value={replyDraft[comment.id] ?? ""}
+                  onChange={(event) =>
+                    setReplyDraft((current) => ({
+                      ...current,
+                      [comment.id]: event.target.value,
+                    }))
                   }
-                }}>
-                  回复
-                </button>
-                <button className="rounded border px-2 py-1 text-xs" type="button" onClick={() => resolveMutation.mutate(comment.id)}>
-                  标记已解决
-                </button>
+                  className="h-16 w-full rounded border border-slate-200 p-2 text-xs"
+                  placeholder="输入回复内容"
+                  onClick={(event) => event.stopPropagation()}
+                />
+                <div className="flex gap-2">
+                  <button
+                    className="rounded bg-slate-900 px-2 py-1 text-xs text-white"
+                    type="button"
+                    onClick={() => {
+                      const content = (replyDraft[comment.id] ?? "").trim();
+                      if (content) {
+                        replyMutation.mutate({ commentId: comment.id, content });
+                      }
+                    }}
+                  >
+                    回复
+                  </button>
+                  <button className="rounded border px-2 py-1 text-xs" type="button" onClick={() => resolveMutation.mutate(comment.id)}>
+                    标记已解决
+                  </button>
+                </div>
               </div>
             </div>
           )}

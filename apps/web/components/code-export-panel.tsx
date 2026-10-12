@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { apiFetch } from "@/lib/api";
 import type { LayerNode } from "@/types/design";
 
 interface CodeExportPanelProps {
@@ -34,11 +35,7 @@ export function CodeExportPanel({ layer, apiBaseUrl }: CodeExportPanelProps) {
       if (!layer) {
         return "";
       }
-      const response = await fetch(`${apiBaseUrl}/layers/${layer.id}/code?format=${activeTab}`, { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error("代码获取失败");
-      }
-      const payload = (await response.json()) as { code: string };
+      const payload = await apiFetch<{ code: string }>(`/layers/${layer.id}/code?format=${activeTab}`);
       return payload.code;
     },
     enabled: Boolean(layer),

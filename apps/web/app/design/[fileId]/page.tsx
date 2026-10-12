@@ -51,11 +51,10 @@ export default function DesignPage() {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("projectId", "default-project");
-      const response = await fetch(`${API_BASE_URL}/design-files/upload`, { method: "POST", body: formData });
-      if (!response.ok) {
-        throw new Error("上传失败");
-      }
-      return (await response.json()) as { fileId: string };
+      return apiFetch<{ fileId: string }>("/design-files/upload", {
+        method: "POST",
+        body: formData,
+      });
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["artboards", fileId] });
