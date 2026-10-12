@@ -1,8 +1,10 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import type { Request } from "express";
 import { DesignFilesService } from "./design-files.service";
 import { UploadDesignFileDto } from "./dto/upload-design-file.dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import type { JwtPayload } from "../auth/jwt.strategy";
 
 interface UploadedDesignFile {
   originalname: string;
@@ -31,8 +33,13 @@ export class DesignFilesController {
       },
     }),
   )
-  upload(@UploadedFile() file: UploadedDesignFile, @Body() dto: UploadDesignFileDto) {
-    return this.service.uploadFile(file, dto.projectId, dto.userId ?? "anonymous-user");
+  upload(@UploadedFile() file: UploadedDesignFile, @Body() dto: UploadDesignFileDto, @Req() req: Request & { user: JwtPayload }) {
+    return this.service.uploadFile(file, dto.projectId, req.user?.sub ?? dto.userId ?? "anonymous-user");
+  }
+
+  @Post(":id/share")
+  generateShareLink(@Param("id") id: string) {
+    return this.service.generateShareToken(id);
   }
 
   @Get(":id")

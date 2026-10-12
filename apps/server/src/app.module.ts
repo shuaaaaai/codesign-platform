@@ -9,6 +9,7 @@ import { ArtboardsModule } from "./modules/artboards/artboards.module";
 import { LayersModule } from "./modules/layers/layers.module";
 import { CommentsModule } from "./modules/comments/comments.module";
 import { CollaborationModule } from "./modules/collaboration/collaboration.module";
+import { VersionsModule } from "./modules/versions/versions.module";
 import { Organization } from "./modules/organizations/organization.entity";
 import { User } from "./modules/auth/user.entity";
 import { Project } from "./modules/projects/project.entity";
@@ -19,6 +20,7 @@ import { Comment } from "./modules/comments/comment.entity";
 import { DesignToken } from "./modules/design-files/design-token.entity";
 import { Asset } from "./modules/design-files/asset.entity";
 import { TeamMember } from "./modules/organizations/team-member.entity";
+import { Version } from "./modules/versions/version.entity";
 
 @Module({
   imports: [
@@ -29,7 +31,7 @@ import { TeamMember } from "./modules/organizations/team-member.entity";
       useFactory: (config: ConfigService) => ({
         type: "postgres",
         url: config.get<string>("DATABASE_URL") ?? "postgresql://localhost:5432/codesign",
-        entities: [Organization, TeamMember, User, Project, DesignFile, Artboard, LayerNode, Comment, DesignToken, Asset],
+        entities: [Organization, TeamMember, User, Project, DesignFile, Artboard, LayerNode, Comment, DesignToken, Asset, Version],
         synchronize: false,
         migrations: ["dist/database/migrations/*.js"],
         migrationsRun: false,
@@ -44,6 +46,7 @@ import { TeamMember } from "./modules/organizations/team-member.entity";
     LayersModule,
     CommentsModule,
     CollaborationModule,
+    VersionsModule,
   ],
 })
 export class AppModule {}

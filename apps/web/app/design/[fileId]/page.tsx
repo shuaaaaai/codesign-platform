@@ -8,6 +8,7 @@ import { io, type Socket } from "socket.io-client";
 import { InfiniteCanvas } from "@/components/infinite-canvas";
 import { UploadModal } from "@/components/upload-modal";
 import { apiFetch, API_BASE_URL } from "@/lib/api";
+import { getWsUrl } from "@/lib/runtime-config";
 import { useCanvasStore } from "@/store/canvas";
 import type { Artboard, Collaborator } from "@/types/design";
 
@@ -15,7 +16,7 @@ export default function DesignPage() {
   const params = useParams<{ fileId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:4000";
+  const wsUrl = getWsUrl();
   const [openUpload, setOpenUpload] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
 
