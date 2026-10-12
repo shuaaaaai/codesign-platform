@@ -5,7 +5,12 @@ const PUBLIC_PATHS = ["/", "/api"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isPublic = PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith("/api"));
+  const isPublic = PUBLIC_PATHS.some((path) => {
+    if (path === "/") {
+      return pathname === "/";
+    }
+    return pathname === path || pathname.startsWith(`${path}/`);
+  });
 
   if (!isPublic) {
     const token = request.cookies.get("accessToken")?.value;
